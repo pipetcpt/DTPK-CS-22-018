@@ -164,8 +164,15 @@ GLM(f, metformin_BE_rawc)$ANOVA     ## Anova result
 
 
 
+## Metformin NCA (Arm B, C bind)
+metformin_NCAbc<-rbind(metformin_NCAb,metformin_NCAc)
 
-
+## Create summary table 
+metformin_NCAbc %>%
+  select(-ID) %>%
+  tbl_summary(by = Period, 
+              type = TMAX ~ "continuous", 
+              statistic = c("TMAX") ~ "{median} ({min}- {max})")
 
 
 
@@ -255,3 +262,15 @@ civc <- intervals(BEvc, 0.9)
 exp(civc$fixed["Period2기", ])    ## 90% CI result 
 
 GLM(f, valsartan_BE_rawc)$ANOVA     ## Anova result
+
+
+
+## Valsartan NCA (Arm A, C bind)
+valsartan_NCAac<-rbind(valsartan_NCAa,valsartan_NCAc)
+
+## Create summary table 
+valsartan_NCAac %>%
+  select(-ID) %>%
+  tbl_summary(by = Period, 
+              type = TMAX ~ "continuous", 
+              statistic = c("TMAX") ~ "{median} ({min}- {max})")
