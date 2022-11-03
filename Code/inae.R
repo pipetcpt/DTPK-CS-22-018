@@ -6,8 +6,6 @@ library(gtsummary)
 library(sasLM)
 library(nlme)
 
-setwd("C:/Users/cmc/Desktop/아주PK")
-
 my_theme <-
   list(
     # round large p-values to two places
@@ -29,7 +27,7 @@ theme_gtsummary_compact()
 
 
 ## Dapa prep
-datad <- read_excel('Dapagliflozin.xlsx', sheet = 5, skip = 1)
+datad <- read_excel('Data/PK/Dapagliflozin.xlsx', sheet = 5, skip = 1)
 "%ni%" <- Negate("%in%")
 
 dapa <- datad %>%
@@ -43,7 +41,7 @@ dapa <- datad %>%
 # DB 수령 후 Real-time 적용 예정
 
 ## NCA calculation
-dapa_NCA <- tblNCA(dapa, key = c("Period", "ID"), colTime = "Time", colConc = "Conc", dose = 10, adm = "Extravascular", R2ADJ = -1, concUnit = 'ng/mL') %>%
+dapa_NCA <- tblNCA(dapa, key = c("Period", "ID"), colTime = "Time", colConc = "Conc", dose = 10, adm = "Extravascular", R2ADJ = -1, concUnit = 'mg/mL') %>%
   select(Period, ID, CMAX, TMAX, LAMZHL, AUCLST, AUCIFO, CLFO, VZFO) 
 
 ## Create summary table 
@@ -57,20 +55,34 @@ dapa_NCA %>%
 dapa_BE_raw <- dapa_NCA  %>%
   mutate(LCMAX = log10(CMAX), LAUCLST = log10(AUCLST))
 
-f <- LCMAX ~ Period  # LCMAX, LAUCLST
-# f <- LAUCLST ~ Period 
-
-BEd <- lme(f, random = ~1|ID, data = dapa_BE_raw)    
-cid <- intervals(BEd, 0.9)
-exp(cid$fixed["Period2기", ])    ## 90% CI result 
-
-GLM(f, dapa_BE_raw)$ANOVA     ## Anova result
+fc <- LCMAX ~ Period  # LCMAX
 
 
+BEdc <- lme(fc, random = ~1|ID, data = dapa_BE_raw)    
+cidc <- intervals(BEdc, 0.9)
+exp(cidc$fixed["Period2기", ])    ## 90% CI result 
+
+GLM(fc, dapa_BE_raw)$ANOVA     ## Anova result
 
 
 
 
+## Comparative PK
+dapa_BE_raw <- dapa_NCA  %>%
+  mutate(LCMAX = log10(CMAX), LAUCLST = log10(AUCLST))
+
+fa <- LAUCLST ~ Period  # LAUCLST
+
+BEda <- lme(fa, random = ~1|ID, data = dapa_BE_raw)    
+cida <- intervals(BEda, 0.9)
+exp(cida$fixed["Period2기", ])    ## 90% CI result 
+
+GLM(fa, dapa_BE_raw)$ANOVA     ## Anova result
+
+
+
+
+## 다시 수정 필요함
 
 
 
