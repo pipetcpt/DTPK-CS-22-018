@@ -101,7 +101,7 @@ metforminb <- datamb %>%
 # DB 수령 후 Real-time 적용 예정
 
 ## NCA calculation
-metformin_NCAb <- tblNCA(metforminb, key = c("Period", "ID"), colTime = "Time", colConc = "Conc", dose = 1000, adm = "Extravascular", R2ADJ = -1, concUnit = 'ng/mL') %>%
+metformin_NCAb <- tblNCA(metforminb, key = c("Period", "ID"), colTime = "Time", colConc = "Conc", dose = 1000, adm = "Extravascular", R2ADJ = -1, concUnit = 'mg/mL') %>%
   select(Period, ID, CMAX, TMAX, LAMZHL, AUCLST, AUCIFO, CLFO, VZFO) 
 
 ## Create summary table 
