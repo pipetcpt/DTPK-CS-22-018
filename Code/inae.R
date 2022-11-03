@@ -82,7 +82,6 @@ GLM(fa, dapa_BE_raw)$ANOVA     ## Anova result
 
 
 
-## 다시 수정 필요함
 
 
 
@@ -116,16 +115,29 @@ metformin_NCAb %>%
 metformin_BE_rawb <- metformin_NCAb  %>%
   mutate(LCMAX = log10(CMAX), LAUCLST = log10(AUCLST))
 
-f <- LCMAX ~ Period  # LCMAX, LAUCLST
-# f <- LAUCLST ~ Period 
+fmc <- LCMAX ~ Period  # LCMAX
 
-BEmb <- lme(f, random = ~1|ID, data = metformin_BE_rawb)    
-cimb <- intervals(BEmb, 0.9)
-exp(cimb$fixed["Period2기", ])    ## 90% CI result 
+BEmbc <- lme(fmc, random = ~1|ID, data = metformin_BE_rawb)    
+cimbc <- intervals(BEmbc, 0.9)
+exp(cimbc$fixed["Period2기", ])    ## 90% CI result 
 
-GLM(f, metformin_BE_rawb)$ANOVA     ## Anova result
+GLM(fmc, metformin_BE_rawb)$ANOVA     ## Anova result
 
 
+
+
+
+## Comparative PK
+metformin_BE_rawb <- metformin_NCAb  %>%
+  mutate(LCMAX = log10(CMAX), LAUCLST = log10(AUCLST))
+
+fma <- LAUCLST ~ Period  # LAUCLST
+
+BEmba <- lme(fma, random = ~1|ID, data = metformin_BE_rawb)    
+cimba <- intervals(BEmba, 0.9)
+exp(cimba$fixed["Period2기", ])    ## 90% CI result 
+
+GLM(fma, metformin_BE_rawb)$ANOVA     ## Anova result
 
 
 
@@ -159,21 +171,29 @@ metformin_NCAc %>%
               type = TMAX ~ "continuous", 
               statistic = c("TMAX") ~ "{median} ({min}- {max})")
 
-## Comparative PK
+## Comparative PK(Cmax)
 metformin_BE_rawc <- metformin_NCAc  %>%
   mutate(LCMAX = log10(CMAX), LAUCLST = log10(AUCLST))
 
-f <- LCMAX ~ Period  # LCMAX, LAUCLST
-# f <- LAUCLST ~ Period 
+fmc <- LCMAX ~ Period  # LCMAX 
 
-BEmc <- lme(f, random = ~1|ID, data = metformin_BE_rawc)    
+BEmc <- lme(fmc, random = ~1|ID, data = metformin_BE_rawc)    
 cimc <- intervals(BEmc, 0.9)
 exp(cimc$fixed["Period2기", ])    ## 90% CI result 
 
-GLM(f, metformin_BE_rawc)$ANOVA     ## Anova result
+GLM(fmc, metformin_BE_rawc)$ANOVA     ## Anova result
 
+## Comparative PK(AUCLST)
+metformin_BE_rawc <- metformin_NCAc  %>%
+  mutate(LCMAX = log10(CMAX), LAUCLST = log10(AUCLST))
 
+fma <- LAUCLST ~ Period  # LAUCLST
 
+BEma <- lme(fma, random = ~1|ID, data = metformin_BE_rawc)    
+cima <- intervals(BEma, 0.9)
+exp(cima$fixed["Period2기", ])    ## 90% CI result 
+
+GLM(fma, metformin_BE_rawc)$ANOVA     ## Anova result
 
 
 ## Metformin NCA (Arm B, C bind)
@@ -190,6 +210,11 @@ metformin_NCAbc %>%
 
 
 
+
+
+
+
+## 다시 수정 필요함/ Cmax, AUCLST
 
 
 
