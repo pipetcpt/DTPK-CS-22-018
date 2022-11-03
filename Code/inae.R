@@ -88,7 +88,7 @@ GLM(fa, dapa_BE_raw)$ANOVA     ## Anova result
 
 
 ## Metformin prep(Cohort B)
-datamb <- read_excel('Metformin.xlsx', sheet = 5, skip = 1)
+datamb <- read_excel('Data/PK/Metformin.xlsx', sheet = 5, skip = 1)
 "%ni%" <- Negate("%in%")
 
 metforminb <- datamb %>%
@@ -135,7 +135,7 @@ GLM(f, metformin_BE_rawb)$ANOVA     ## Anova result
 
 
 ## Metformin prep(Cohort C)
-datamc <- read_excel('Metformin.xlsx', sheet = 6, skip = 1)
+datamc <- read_excel('Data/PK/Metformin.xlsx', sheet = 6, skip = 1)
 "%ni%" <- Negate("%in%")
 
 metforminc <- datamc %>%
@@ -195,7 +195,7 @@ metformin_NCAbc %>%
 
 
 ## Valsartan prep(Cohort A)
-datava <- read_excel('Valsartan.xlsx', sheet = 5, skip = 1)
+datava <- read_excel('Data/PK/Valsartan.xlsx', sheet = 5, skip = 1)
 "%ni%" <- Negate("%in%")
 
 valsartana <- datava %>%
@@ -238,7 +238,7 @@ GLM(f, valsartan_BE_rawa)$ANOVA     ## Anova result
 
 
 ## Valsartan prep(Cohort C)
-datavc <- read_excel('Valsartan.xlsx', sheet = 6, skip = 1)
+datavc <- read_excel('Data/PK/Valsartan.xlsx', sheet = 6, skip = 1)
 "%ni%" <- Negate("%in%")
 
 valsartanc <- datavc %>%
