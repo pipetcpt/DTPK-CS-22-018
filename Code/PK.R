@@ -34,8 +34,32 @@ dapa <- data %>%
 
 # DB 수령 후 Real-time 적용 예정
 
+db <- list.files('Data/DB', pattern = "xlsx", full.names = T)
+
+db_rn <- read_excel(db, sheet = "RN")
+db_pk <- read_excel(db, sheet = "PB")
+
+db_rn
+
+
+view(dapa)
+
+db_pk_tidy <- db_pk %>%
+    mutate(PBDETM = ifelse(SEQ == 1, 0, PBDETM), PBDETM = as.numeric(PBDETM)) %>%
+    left_join(db_rn %>% select(SUBJID, RNNO), by = "SUBJID") %>%
+    rename(ID = RNNO) %>%
+    mutate(Period = ifelse(VISIT %in% c(3, 4), "1기", "2기")) %>%
+    mutate(Time = parse_number(PBNT)) 
+
+new_dapa <- dapa %>%
+    left_join(db_pk_tidy %>% select(ID, Time, PBDETM, Period), by = c("ID", "Period", "Time")) %>%
+    mutate(RTime = Time + PBDETM/60) %>%
+    arrange(ID)
+
+
+
 ## NCA calculation
-dapa_NCA <- tblNCA(dapa, key = c("Period", "ID"), colTime = "Time", colConc = "Conc", dose = 100, adm = "Extravascular", R2ADJ = -1, concUnit = 'ng/mL') %>%
+dapa_NCA <- tblNCA(new_dapa, key = c("Period", "ID"), colTime = "RTime", colConc = "Conc", dose = 100, adm = "Extravascular", R2ADJ = -1, concUnit = 'ng/mL') %>%
     select(Period, ID, CMAX, TMAX, LAMZHL, AUCLST, AUCIFO, CLFO, VZFO) 
 
 ## Create summary table 
