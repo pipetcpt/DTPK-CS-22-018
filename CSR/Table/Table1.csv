@@ -1,0 +1,28 @@
+"","Description","N"
+"1","Number of subjects screened",99
+"2","Number of subject enrolled",64
+"3","Number of subjects NOT enrolled",35
+"4","Eligibility criteria",35
+"5","Consent withdrawal",0
+"6","Others",0
+"7","Enrolled",24
+"8","Treated",24
+"9","Non-Treated",0
+"10","Completed",21
+"11","Drop - out",3
+"12","Enrolled",16
+"13","Treated",16
+"14","Non-Treated",0
+"15","Completed",14
+"16","Drop - out",2
+"17","Enrolled",24
+"18","Treated",24
+"19","Non-Treated",0
+"20","Completed",21
+"21","Drop - out",3
+"22","Consent withdrawal",0
+"23","Concurrent medication",4
+"24","Investigators decision related to Serious AE ",0
+"25","Serious protocol violation (Inclusion/Exclusion criteria)",0
+"26","Investigators decision",4
+"27","Others",0
