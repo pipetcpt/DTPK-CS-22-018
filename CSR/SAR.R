@@ -299,6 +299,6 @@ write.csv(AE, "AE.csv", row.names = FALSE, fileEncoding = "euc-kr")
 
 
 # p-value 
-.
+
 
 

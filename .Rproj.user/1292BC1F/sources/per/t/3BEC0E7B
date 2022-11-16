@@ -1,0 +1,26 @@
+{
+    "id": "3BEC0E7B",
+    "path": "~/GitHub/DTPK-CS-22-018/appendix_code/appendix_2022.10.31.R",
+    "project_path": "appendix_code/appendix_2022.10.31.R",
+    "type": "r_source",
+    "hash": "1396745527",
+    "contents": "",
+    "dirty": false,
+    "created": 1668577822112.0,
+    "source_on_save": false,
+    "relative_order": 2,
+    "properties": {
+        "source_window_id": "",
+        "Source": "Source",
+        "cursorPosition": "692,6",
+        "scrollLine": "718"
+    },
+    "folds": "24|5|32|2|\n214|5|246|0|\n576|5|589|34|\n806|5|956|0|\n",
+    "lastKnownWriteTime": 1668586961,
+    "encoding": "UTF-8",
+    "collab_server": "",
+    "source_window": "",
+    "last_content_update": 1668586961978,
+    "read_only": false,
+    "read_only_alternatives": []
+}
