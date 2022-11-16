@@ -126,6 +126,12 @@ metb <- datamb %>%
 
 
 # DB 수령 후 Real-time 적용 예정
+db <- list.files('Data/DB', pattern = "xlsx", full.names = T)
+
+db_rn <- read_excel(db, sheet = "RN")
+db_pk <- read_excel(db, sheet = "PB")
+
+db_rn
 
 view(metb)
 
@@ -209,6 +215,12 @@ metc <- datamc %>%
   as.data.frame()
 
 # DB 수령 후 Real-time 적용 예정
+db <- list.files('Data/DB', pattern = "xlsx", full.names = T)
+
+db_rn <- read_excel(db, sheet = "RN")
+db_pk <- read_excel(db, sheet = "PB")
+
+db_rn
 
 view(metc)
 
@@ -295,6 +307,13 @@ valsaa <- datava %>%
   as.data.frame()
 
 # DB 수령 후 Real-time 적용 예정
+db <- list.files('Data/DB', pattern = "xlsx", full.names = T)
+
+db_rn <- read_excel(db, sheet = "RN")
+db_pk <- read_excel(db, sheet = "PB")
+
+db_rn
+
 
 view(valsaa)
 
@@ -373,6 +392,13 @@ valsac <- datavc %>%
   as.data.frame()
 
 # DB 수령 후 Real-time 적용 예정
+db <- list.files('Data/DB', pattern = "xlsx", full.names = T)
+
+db_rn <- read_excel(db, sheet = "RN")
+db_pk <- read_excel(db, sheet = "PB")
+
+db_rn
+
 
 view(valsac)
 
