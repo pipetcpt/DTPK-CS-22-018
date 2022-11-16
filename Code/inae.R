@@ -76,7 +76,7 @@ dapa_NCA %>%
 
 ## Comparative PK(CMAX)
 dapa_BE_raw <- dapa_NCA  %>%
-  mutate(LCMAX = log10(CMAX), LAUCLST = log10(AUCLST))
+  mutate(LCMAX = log(CMAX), LAUCLST = log(AUCLST))
 
 fc <- LCMAX ~ Period  # LCMAX
 
@@ -92,7 +92,7 @@ GLM(fc, dapa_BE_raw)$ANOVA     ## Anova result
 
 ## Comparative PK(AUCLST)
 dapa_BE_raw <- dapa_NCA  %>%
-  mutate(LCMAX = log10(CMAX), LAUCLST = log10(AUCLST))
+  mutate(LCMAX = log(CMAX), LAUCLST = log(AUCLST))
 
 fa <- LAUCLST ~ Period  # LAUCLST
 
@@ -163,7 +163,7 @@ metb_NCA %>%
 
 ## Comparative PK(CMAX)
 metb_BE_raw <- metb_NCA  %>%
-  mutate(LCMAX = log10(CMAX), LAUCLST = log10(AUCLST))
+  mutate(LCMAX = log(CMAX), LAUCLST = log(AUCLST))
 
 fmbc <- LCMAX ~ Period  # LCMAX
 
@@ -179,7 +179,7 @@ GLM(fmbc, metb_BE_raw)$ANOVA     ## Anova result
 
 ## Comparative PK(AUCLST)
 metb_BE_raw <- metb_NCA  %>%
-  mutate(LCMAX = log10(CMAX), LAUCLST = log10(AUCLST))
+  mutate(LCMAX = log(CMAX), LAUCLST = log(AUCLST))
 
 fmba <- LAUCLST ~ Period  # LAUCLST
 
@@ -252,7 +252,7 @@ metc_NCA %>%
 
 ## Comparative PK(CMAX)
 metc_BE_raw <- metc_NCA  %>%
-  mutate(LCMAX = log10(CMAX), LAUCLST = log10(AUCLST))
+  mutate(LCMAX = log(CMAX), LAUCLST = log(AUCLST))
 
 fmcc <- LCMAX ~ Period  # LCMAX
 
@@ -268,7 +268,7 @@ GLM(fmcc, metc_BE_raw)$ANOVA     ## Anova result
 
 ## Comparative PK(AUCLST)
 metc_BE_raw <- metc_NCA  %>%
-  mutate(LCMAX = log10(CMAX), LAUCLST = log10(AUCLST))
+  mutate(LCMAX = log(CMAX), LAUCLST = log(AUCLST))
 
 fmca <- LAUCLST ~ Period  # LAUCLST
 
@@ -345,7 +345,7 @@ valsaa_NCA %>%
 
 ## Comparative PK(CMAX)
 valsaa_BE_raw <- valsaa_NCA  %>%
-  mutate(LCMAX = log10(CMAX), LAUCLST = log10(AUCLST))
+  mutate(LCMAX = log(CMAX), LAUCLST = log(AUCLST))
 
 fvac <- LCMAX ~ Period  # LCMAX
 
@@ -359,7 +359,7 @@ GLM(fvac, valsaa_BE_raw)$ANOVA     ## Anova result
 
 ## Comparative PK(AUCLST)
 valsaa_BE_raw <- valsaa_NCA  %>%
-  mutate(LCMAX = log10(CMAX), LAUCLST = log10(AUCLST))
+  mutate(LCMAX = log(CMAX), LAUCLST = log(AUCLST))
 
 fvaa <- LAUCLST ~ Period  # LAUCLST
 
@@ -430,7 +430,7 @@ valsac_NCA %>%
 
 ## Comparative PK(CMAX)
 valsac_BE_raw <- valsac_NCA  %>%
-  mutate(LCMAX = log10(CMAX), LAUCLST = log10(AUCLST))
+  mutate(LCMAX = log(CMAX), LAUCLST = log(AUCLST))
 
 fvcc <- LCMAX ~ Period  # LCMAX
 
@@ -444,7 +444,7 @@ GLM(fvcc, valsac_BE_raw)$ANOVA     ## Anova result
 
 ## Comparative PK(AUCLST)
 valsac_BE_raw <- valsac_NCA  %>%
-  mutate(LCMAX = log10(CMAX), LAUCLST = log10(AUCLST))
+  mutate(LCMAX = log(CMAX), LAUCLST = log(AUCLST))
 
 fvca <- LAUCLST ~ Period  # LAUCLST
 
