@@ -18,16 +18,11 @@ my_theme <-
 set_gtsummary_theme(my_theme)
 theme_gtsummary_compact()
 
-setwd('C:/Users/cmc/Documents/GitHub/DTPK-CS-22-018/Data/PK')
-
-
-
-
 
 
 
 ## Dapa prep
-datad <- read_excel('Dapagliflozin.xlsx', sheet = 5, skip = 1)
+datad <- read_excel('Data/PK/Dapagliflozin.xlsx', sheet = 5, skip = 1)
 "%ni%" <- Negate("%in%")
 
 dapa <- datad %>%
@@ -38,10 +33,38 @@ dapa <- datad %>%
   filter(ID %ni% c("B140", "B070")) %>%
   as.data.frame()
 
+
+
+
+
 # DB 수령 후 Real-time 적용 예정
+db <- list.files('Data/DB', pattern = "xlsx", full.names = T)
+
+db_rn <- read_excel(db, sheet = "RN")
+db_pk <- read_excel(db, sheet = "PB")
+
+db_rn
+
+
+view(dapa)
+
+db_pk_tidy <- db_pk %>%
+  mutate(PBDETM = ifelse(SEQ == 1, 0, PBDETM), PBDETM = as.numeric(PBDETM)) %>%
+  left_join(db_rn %>% select(SUBJID, RNNO), by = "SUBJID") %>%
+  rename(ID = RNNO) %>%
+  mutate(Period = ifelse(VISIT %in% c(3, 4), "1기", "2기")) %>%
+  mutate(Time = parse_number(PBNT)) 
+
+new_dapa <- dapa %>%
+  left_join(db_pk_tidy %>% select(ID, Time, PBDETM, Period), by = c("ID", "Period", "Time")) %>%
+  mutate(RTime = Time + PBDETM/60) %>%
+  arrange(ID)
+
+
+
 
 ## NCA calculation
-dapa_NCA <- tblNCA(dapa, key = c("Period", "ID"), colTime = "Time", colConc = "Conc", dose = 10, adm = "Extravascular", R2ADJ = -1, concUnit = 'mg/mL') %>%
+dapa_NCA <- tblNCA(new_dapa, key = c("Period", "ID"), colTime = "RTime", colConc = "Conc", dose = 10, adm = "Extravascular", R2ADJ = -1, concUnit = 'ng/mL') %>%
   select(Period, ID, CMAX, TMAX, LAMZHL, AUCLST, AUCIFO, CLFO, VZFO) 
 
 ## Create summary table 
@@ -87,10 +110,10 @@ GLM(fa, dapa_BE_raw)$ANOVA     ## Anova result
 
 
 ## Metformin prep(Cohort B)
-datamb <- read_excel('Metformin.xlsx', sheet = 5, skip = 1)
+datamb <- read_excel('Data/PK/metformin.xlsx', sheet = 5, skip = 1)
 "%ni%" <- Negate("%in%")
 
-metforminb <- datamb %>%
+metb <- datamb %>%
   mutate(Period = ifelse(is.na(Period), na.locf(Period), Period)) %>%
   rename("Time" = 2) %>%
   gather("ID", "Conc", -c("Period", "Time")) %>%
@@ -98,46 +121,71 @@ metforminb <- datamb %>%
   filter(ID %ni% c("B140", "B070")) %>%
   as.data.frame()
 
+
+
+
+
 # DB 수령 후 Real-time 적용 예정
 
+view(metb)
+
+db_pk_tidy <- db_pk %>%
+  mutate(PBDETM = ifelse(SEQ == 1, 0, PBDETM), PBDETM = as.numeric(PBDETM)) %>%
+  left_join(db_rn %>% select(SUBJID, RNNO), by = "SUBJID") %>%
+  rename(ID = RNNO) %>%
+  mutate(Period = ifelse(VISIT %in% c(3, 4), "1기", "2기")) %>%
+  mutate(Time = parse_number(PBNT)) 
+
+new_metb <- metb %>%
+  left_join(db_pk_tidy %>% select(ID, Time, PBDETM, Period), by = c("ID", "Period", "Time")) %>%
+  mutate(RTime = Time + PBDETM/60) %>%
+  arrange(ID)
+
+
+
+
 ## NCA calculation
-metformin_NCAb <- tblNCA(metforminb, key = c("Period", "ID"), colTime = "Time", colConc = "Conc", dose = 1000, adm = "Extravascular", R2ADJ = -1, concUnit = 'mg/mL') %>%
+metb_NCA <- tblNCA(new_metb, key = c("Period", "ID"), colTime = "RTime", colConc = "Conc", dose = 1000, adm = "Extravascular", R2ADJ = -1, concUnit = 'ng/mL') %>%
   select(Period, ID, CMAX, TMAX, LAMZHL, AUCLST, AUCIFO, CLFO, VZFO) 
 
 ## Create summary table 
-metformin_NCAb %>%
+metb_NCA %>%
   select(-ID) %>%
   tbl_summary(by = Period, 
               type = TMAX ~ "continuous", 
               statistic = c("TMAX") ~ "{median} ({min}- {max})")
 
-## Comparative PK(Metformin_Cohort B_CMAX)
-metformin_BE_rawb <- metformin_NCAb  %>%
+## Comparative PK(CMAX)
+metb_BE_raw <- metb_NCA  %>%
   mutate(LCMAX = log10(CMAX), LAUCLST = log10(AUCLST))
 
 fmbc <- LCMAX ~ Period  # LCMAX
 
-BEmbc <- lme(fmbc, random = ~1|ID, data = metformin_BE_rawb)    
+
+BEmbc <- lme(fmbc, random = ~1|ID, data = metb_BE_raw)    
 cimbc <- intervals(BEmbc, 0.9)
 exp(cimbc$fixed["Period2기", ])    ## 90% CI result 
 
-GLM(fmbc, metformin_BE_rawb)$ANOVA     ## Anova result
+GLM(fmbc, metb_BE_raw)$ANOVA     ## Anova result
 
 
 
 
-
-## Comparative PK(Metformin_Cohort B_AUCLST)
-metformin_BE_rawb <- metformin_NCAb  %>%
+## Comparative PK(AUCLST)
+metb_BE_raw <- metb_NCA  %>%
   mutate(LCMAX = log10(CMAX), LAUCLST = log10(AUCLST))
 
 fmba <- LAUCLST ~ Period  # LAUCLST
 
-BEmba <- lme(fmba, random = ~1|ID, data = metformin_BE_rawb)    
+BEmba <- lme(fmba, random = ~1|ID, data = metb_BE_raw)    
 cimba <- intervals(BEmba, 0.9)
 exp(cimba$fixed["Period2기", ])    ## 90% CI result 
 
-GLM(fmba, metformin_BE_rawb)$ANOVA     ## Anova result
+GLM(fmba, metb_BE_raw)$ANOVA     ## Anova result
+
+
+
+
 
 
 
@@ -149,10 +197,10 @@ GLM(fmba, metformin_BE_rawb)$ANOVA     ## Anova result
 
 
 ## Metformin prep(Cohort C)
-datamc <- read_excel('Metformin.xlsx', sheet = 6, skip = 1)
+datamc <- read_excel('Data/PK/Metformin.xlsx', sheet = 6, skip = 1)
 "%ni%" <- Negate("%in%")
 
-metforminc <- datamc %>%
+metc <- datamc %>%
   mutate(Period = ifelse(is.na(Period), na.locf(Period), Period)) %>%
   rename("Time" = 2) %>%
   gather("ID", "Conc", -c("Period", "Time")) %>%
@@ -162,40 +210,61 @@ metforminc <- datamc %>%
 
 # DB 수령 후 Real-time 적용 예정
 
+view(metc)
+
+db_pk_tidy <- db_pk %>%
+  mutate(PBDETM = ifelse(SEQ == 1, 0, PBDETM), PBDETM = as.numeric(PBDETM)) %>%
+  left_join(db_rn %>% select(SUBJID, RNNO), by = "SUBJID") %>%
+  rename(ID = RNNO) %>%
+  mutate(Period = ifelse(VISIT %in% c(3, 4), "1기", "2기")) %>%
+  mutate(Time = parse_number(PBNT)) 
+
+new_metc <- metc %>%
+  left_join(db_pk_tidy %>% select(ID, Time, PBDETM, Period), by = c("ID", "Period", "Time")) %>%
+  mutate(RTime = Time + PBDETM/60) %>%
+  arrange(ID)
+
+
+
+
 ## NCA calculation
-metformin_NCAc <- tblNCA(metforminc, key = c("Period", "ID"), colTime = "Time", colConc = "Conc", dose = 1000, adm = "Extravascular", R2ADJ = -1, concUnit = 'mg/mL') %>%
+metc_NCA <- tblNCA(new_metc, key = c("Period", "ID"), colTime = "RTime", colConc = "Conc", dose = 1000, adm = "Extravascular", R2ADJ = -1, concUnit = 'ng/mL') %>%
   select(Period, ID, CMAX, TMAX, LAMZHL, AUCLST, AUCIFO, CLFO, VZFO) 
 
 ## Create summary table 
-metformin_NCAc %>%
+metc_NCA %>%
   select(-ID) %>%
   tbl_summary(by = Period, 
               type = TMAX ~ "continuous", 
               statistic = c("TMAX") ~ "{median} ({min}- {max})")
 
-## Comparative PK(Metformin_Cohort C_Cmax)
-metformin_BE_rawc <- metformin_NCAc  %>%
+## Comparative PK(CMAX)
+metc_BE_raw <- metc_NCA  %>%
   mutate(LCMAX = log10(CMAX), LAUCLST = log10(AUCLST))
 
-fmc <- LCMAX ~ Period  # LCMAX 
+fmcc <- LCMAX ~ Period  # LCMAX
 
-BEmc <- lme(fmc, random = ~1|ID, data = metformin_BE_rawc)    
-cimc <- intervals(BEmc, 0.9)
-exp(cimc$fixed["Period2기", ])    ## 90% CI result 
 
-GLM(fmc, metformin_BE_rawc)$ANOVA     ## Anova result
+BEmcc <- lme(fmcc, random = ~1|ID, data = metc_BE_raw)    
+cimcc <- intervals(BEmcc, 0.9)
+exp(cimcc$fixed["Period2기", ])    ## 90% CI result 
 
-## Comparative PK(Metformin_Cohort C_AUCLST)
-metformin_BE_rawc <- metformin_NCAc  %>%
+GLM(fmcc, metc_BE_raw)$ANOVA     ## Anova result
+
+
+
+
+## Comparative PK(AUCLST)
+metc_BE_raw <- metc_NCA  %>%
   mutate(LCMAX = log10(CMAX), LAUCLST = log10(AUCLST))
 
-fma <- LAUCLST ~ Period  # LAUCLST
+fmca <- LAUCLST ~ Period  # LAUCLST
 
-BEma <- lme(fma, random = ~1|ID, data = metformin_BE_rawc)    
-cima <- intervals(BEma, 0.9)
-exp(cima$fixed["Period2기", ])    ## 90% CI result 
+BEmca <- lme(fmca, random = ~1|ID, data = metc_BE_raw)    
+cimca <- intervals(BEmca, 0.9)
+exp(cimca$fixed["Period2기", ])    ## 90% CI result 
 
-GLM(fma, metformin_BE_rawc)$ANOVA     ## Anova result
+GLM(fmca, metc_BE_raw)$ANOVA     ## Anova result
 
 
 
@@ -214,10 +283,10 @@ GLM(fma, metformin_BE_rawc)$ANOVA     ## Anova result
 
 
 ## Valsartan prep(Cohort A)
-datava <- read_excel('Valsartan.xlsx', sheet = 5, skip = 1)
+datava <- read_excel('Data/PK/Valsartan.xlsx', sheet = 5, skip = 1)
 "%ni%" <- Negate("%in%")
 
-valsartana <- datava %>%
+valsaa <- datava %>%
   mutate(Period = ifelse(is.na(Period), na.locf(Period), Period)) %>%
   rename("Time" = 2) %>%
   gather("ID", "Conc", -c("Period", "Time")) %>%
@@ -227,42 +296,59 @@ valsartana <- datava %>%
 
 # DB 수령 후 Real-time 적용 예정
 
+view(valsaa)
+
+db_pk_tidy <- db_pk %>%
+  mutate(PBDETM = ifelse(SEQ == 1, 0, PBDETM), PBDETM = as.numeric(PBDETM)) %>%
+  left_join(db_rn %>% select(SUBJID, RNNO), by = "SUBJID") %>%
+  rename(ID = RNNO) %>%
+  mutate(Period = ifelse(VISIT %in% c(3, 4), "1기", "2기")) %>%
+  mutate(Time = parse_number(PBNT)) 
+
+new_valsaa <- valsaa %>%
+  left_join(db_pk_tidy %>% select(ID, Time, PBDETM, Period), by = c("ID", "Period", "Time")) %>%
+  mutate(RTime = Time + PBDETM/60) %>%
+  arrange(ID)
+
+
+
+
 ## NCA calculation
-valsartan_NCAa <- tblNCA(valsartana, key = c("Period", "ID"), colTime = "Time", colConc = "Conc", dose = 160, adm = "Extravascular", R2ADJ = -1, concUnit = 'mg/mL') %>%
+valsaa_NCA <- tblNCA(new_valsaa, key = c("Period", "ID"), colTime = "RTime", colConc = "Conc", dose = 160, adm = "Extravascular", R2ADJ = -1, concUnit = 'ng/mL') %>%
   select(Period, ID, CMAX, TMAX, LAMZHL, AUCLST, AUCIFO, CLFO, VZFO) 
 
 ## Create summary table 
-valsartan_NCAa %>%
+valsaa_NCA %>%
   select(-ID) %>%
   tbl_summary(by = Period, 
               type = TMAX ~ "continuous", 
               statistic = c("TMAX") ~ "{median} ({min}- {max})")
 
-## Comparative PK(Valsartan_Cohort A_CMAX)
-valsartan_BE_rawa <- valsartan_NCAa  %>%
+## Comparative PK(CMAX)
+valsaa_BE_raw <- valsaa_NCA  %>%
   mutate(LCMAX = log10(CMAX), LAUCLST = log10(AUCLST))
 
 fvac <- LCMAX ~ Period  # LCMAX
 
-BEvac <- lme(fvac, random = ~1|ID, data = valsartan_BE_rawa)    
+
+BEvac <- lme(fvac, random = ~1|ID, data = valsaa_BE_raw)    
 civac <- intervals(BEvac, 0.9)
 exp(civac$fixed["Period2기", ])    ## 90% CI result 
 
-GLM(fvac, valsartan_BE_rawa)$ANOVA     ## Anova result
+GLM(fvac, valsaa_BE_raw)$ANOVA     ## Anova result
 
 
-
-## Comparative PK(Valsartan_Cohort A_AUCLST)
-valsartan_BE_rawa <- valsartan_NCAa  %>%
+## Comparative PK(AUCLST)
+valsaa_BE_raw <- valsaa_NCA  %>%
   mutate(LCMAX = log10(CMAX), LAUCLST = log10(AUCLST))
 
 fvaa <- LAUCLST ~ Period  # LAUCLST
 
-BEvaa <- lme(fvaa, random = ~1|ID, data = valsartan_BE_rawa)    
+BEvaa <- lme(fvaa, random = ~1|ID, data = valsaa_BE_raw)    
 civaa <- intervals(BEvaa, 0.9)
 exp(civaa$fixed["Period2기", ])    ## 90% CI result 
 
-GLM(fvaa, valsartan_BE_rawa)$ANOVA     ## Anova result
+GLM(fvaa, valsaa_BE_raw)$ANOVA     ## Anova result
 
 
 
@@ -275,10 +361,10 @@ GLM(fvaa, valsartan_BE_rawa)$ANOVA     ## Anova result
 
 
 ## Valsartan prep(Cohort C)
-datavc <- read_excel('Valsartan.xlsx', sheet = 6, skip = 1)
+datavc <- read_excel('Data/PK/Valsartan.xlsx', sheet = 6, skip = 1)
 "%ni%" <- Negate("%in%")
 
-valsartanc <- datavc %>%
+valsac <- datavc %>%
   mutate(Period = ifelse(is.na(Period), na.locf(Period), Period)) %>%
   rename("Time" = 2) %>%
   gather("ID", "Conc", -c("Period", "Time")) %>%
@@ -288,39 +374,56 @@ valsartanc <- datavc %>%
 
 # DB 수령 후 Real-time 적용 예정
 
+view(valsac)
+
+db_pk_tidy <- db_pk %>%
+  mutate(PBDETM = ifelse(SEQ == 1, 0, PBDETM), PBDETM = as.numeric(PBDETM)) %>%
+  left_join(db_rn %>% select(SUBJID, RNNO), by = "SUBJID") %>%
+  rename(ID = RNNO) %>%
+  mutate(Period = ifelse(VISIT %in% c(3, 4), "1기", "2기")) %>%
+  mutate(Time = parse_number(PBNT)) 
+
+new_valsac <- valsac %>%
+  left_join(db_pk_tidy %>% select(ID, Time, PBDETM, Period), by = c("ID", "Period", "Time")) %>%
+  mutate(RTime = Time + PBDETM/60) %>%
+  arrange(ID)
+
+
+
+
 ## NCA calculation
-valsartan_NCAc <- tblNCA(valsartanc, key = c("Period", "ID"), colTime = "Time", colConc = "Conc", dose = 160, adm = "Extravascular", R2ADJ = -1, concUnit = 'ng/mL') %>%
+valsac_NCA <- tblNCA(new_valsac, key = c("Period", "ID"), colTime = "RTime", colConc = "Conc", dose = 160, adm = "Extravascular", R2ADJ = -1, concUnit = 'ng/mL') %>%
   select(Period, ID, CMAX, TMAX, LAMZHL, AUCLST, AUCIFO, CLFO, VZFO) 
 
 ## Create summary table 
-valsartan_NCAc %>%
+valsac_NCA %>%
   select(-ID) %>%
   tbl_summary(by = Period, 
               type = TMAX ~ "continuous", 
               statistic = c("TMAX") ~ "{median} ({min}- {max})")
 
-## Comparative PK(Valsartan_Cohort C_CMAX)
-valsartan_BE_rawc <- valsartan_NCAc  %>%
+## Comparative PK(CMAX)
+valsac_BE_raw <- valsac_NCA  %>%
   mutate(LCMAX = log10(CMAX), LAUCLST = log10(AUCLST))
 
-fvcc <- LCMAX ~ Period  # LCMAX, LAUCLST
+fvcc <- LCMAX ~ Period  # LCMAX
 
-BEvcc <- lme(fvcc, random = ~1|ID, data = valsartan_BE_rawc)    
+
+BEvcc <- lme(fvcc, random = ~1|ID, data = valsac_BE_raw)    
 civcc <- intervals(BEvcc, 0.9)
 exp(civcc$fixed["Period2기", ])    ## 90% CI result 
 
-GLM(fvcc, valsartan_BE_rawc)$ANOVA     ## Anova result
+GLM(fvcc, valsac_BE_raw)$ANOVA     ## Anova result
 
 
-
-## Comparative PK(Valsartan_Cohort C_AUCLST)
-valsartan_BE_rawc <- valsartan_NCAc  %>%
+## Comparative PK(AUCLST)
+valsac_BE_raw <- valsac_NCA  %>%
   mutate(LCMAX = log10(CMAX), LAUCLST = log10(AUCLST))
 
 fvca <- LAUCLST ~ Period  # LAUCLST
 
-BEvca <- lme(fvca, random = ~1|ID, data = valsartan_BE_rawc)    
+BEvca <- lme(fvca, random = ~1|ID, data = valsac_BE_raw)    
 civca <- intervals(BEvca, 0.9)
 exp(civca$fixed["Period2기", ])    ## 90% CI result 
 
-GLM(fvca, valsartan_BE_rawc)$ANOVA     ## Anova result
+GLM(fvca, valsac_BE_raw)$ANOVA     ## Anova result
