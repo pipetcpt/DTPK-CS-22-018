@@ -14,10 +14,11 @@ ipak <-function(pkg){
     install.packages(new.pkg,dependencies=TRUE)
   sapply(pkg,require,character.only=TRUE)
 }
-pkg<-c("tidyverse","lubridate","kableExtra","readxl","qwraps2","DiagrammeR")
+pkg<-c("tidyverse","lubridate","kableExtra","readxl","qwraps2","DiagrammeR", "dplyr","data.table", "formattable")
 ipak(pkg)
 
-getwd()
+setwd("C:/Users/Owner/Documents/GitHub/DTPK-CS-22-018")
+
 # group check! 
 IP <- read_excel("Data/DTC21IP070_20221028160911_EXCEL/DataSetExcel_20221028160911/DTC21IP070_DataCenter_DataSet_List_20221028160911.xlsx", sheet = "IP")
 group_list <- IP %>% 
@@ -31,6 +32,12 @@ group_list <- group_list %>%
                         group_num == "1" ~ "A",
                         group_num == "3" ~ "B",
                         group_num == "4" ~ "C"))
+
+table(group_list$group_num, group_list$IP)
+# A-1 : 3, A 1-2 : 21 -> 24, 21
+# B-3: 1 , B 3-5 : 15 -> 16, 15
+# C-4 : 3 , C4-5 : 21 -> 24, 21 
+
 
 #### Table 1 ####
 # scr : Screening summary
@@ -136,7 +143,7 @@ whole <-summary_table(Total, summary_dm)
 by_group <- summary_table(group_by(Total,IP),summary_dm)
 table2 <-cbind(by_group, whole) 
 
-write.csv(as.data.frame(table2),"CSR/Table/Table2.csv")
+write.csv(as.data.frame(table2),"CSR/Table/Table2.csv", fileEncoding = "euc-kr")
 
 #### Table 3 ####
 MH <- read_excel("Data/DTC21IP070_20221028160911_EXCEL/DataSetExcel_20221028160911/DTC21IP070_DataCenter_DataSet_List_20221028160911.xlsx", sheet="MH") 
@@ -223,31 +230,12 @@ table3 <-cbind(by_group2, whole2)
         
 write.csv(as.data.frame(table3),"CSR/Table/Table3.csv")
 
-#### Table 8, Table 11, Table 14 ####
-# aeR<-c(11,24)
-# aeT<-c(9,26)
-# adrR<-c(12,23)
-# adrT<-c(12,23)
-# ae<-cbind(aeR,aeT)
-# adr<-cbind(adrR,adrT)
-# chisq.test(adr,correct = FALSE)
-
-# Table 9)
-# AE : 전체
-# ADR : AEREL=1 (1 - 관련없음, 2,3,4,5 : 관련 있음)
-# ASAE : AESER=1 (1 - 예, 2 - 아니오)
-# ASADK : AESER=2,3,4,5 and AEREL=1 
-
-# Table 10)
-# AESEV : 1(mild), 2(moderate), 3(severe)
-
-# Table 11) SOC, PT
-
+#### AE #####
 AE <- read_excel("Data/DTC21IP070_20221028160911_EXCEL/DataSetExcel_20221028160911/DTC21IP070_DataCenter_DataSet_List_20221028160911.xlsx", sheet="AE")
-AE <- AE %>% 
-  select(SUBJID, AETYPE, AETERM, AESTDTC, AESER, AESEV, AEREL, AEOUT)
+# AE <- AE %>% 
+#   select(SUBJID, AETYPE, AETERM, AESTDTC, AESTTC, AEENDTC, AEENTC, AESER, AESEV, AEREL, AEOUT, PT, SOC)
 
-AE <- left_join(AE, group_list[c(1,3)], by = "SUBJID")
+AE <- left_join(AE, Anal_set[c(1,2,6)], by = c("SUBJID" = "SID"))
 AE$AESTDTC <- ymd(AE$AESTDTC)
 
 # add period date
@@ -265,33 +253,52 @@ AE <- AE %>%
   mutate(Period_1 = ifelse(AESTDTC >= p1_date & AESTDTC < p2_date, 1,0),
          Period_2 = ifelse(AESTDTC >= p2_date, 1,0),
          Period = ifelse(AESTDTC >= p1_date & AESTDTC < p2_date, "Period_1", "Period_2"))
-         
 
+# 인애쌤 전달 AE 파일
+write.csv(AE, "AE.csv", row.names = FALSE, fileEncoding = "euc-kr")
+#########################################################################################
 
 # Table 8, Table 11, Table 14
-AE_A <- AE %>% 
-  filter(IP == "A")
-AE_B <- AE %>% 
-  filter(IP == "B")
-AE_C <- AE %>% 
-  filter(IP == "C")
+# AE_A <- AE %>%
+#   filter(IP == "A")
+# AE_B <- AE %>%
+#   filter(IP == "B")
+# AE_C <- AE %>%
+#   filter(IP == "C")
+# 
+# 
+# # 중복제거
+# AE_A_filter <- AE_A[!duplicated(AE_A[,c("SUBJID","Period")]),]
+# AE_B_filter <- AE_B[!duplicated(AE_B[,c("SUBJID","Period")]),]
+# AE_C_filter <- AE_C[!duplicated(AE_C[,c("SUBJID","Period")]),]
+# 
+# summary_AE1 <-
+#   list("A" =
+#          list("Number of adverse event" = ~n_perc(!is.na(IP)),
+#               "Number of adverse drug reaction" = ~n_perc(AEREL%in% c(2,3,4,5)),
+#               "Number of serious adverse event" = ~n_perc(AESER == 1),
+#               "Number of serious adverse drug reaction" = ~n_perc(AEREL %in% c(2,3,4,5) & AESER == 1)
+#               )
+#        )
+# 
+# t8_whole <- summary_table(AE_A_filter, summary_AE1)
+# by_period <- summary_table(group_by(AE_A_filter, Period), summary_AE1)
+# table_8 <- cbind(by_period, t8_whole)
+# 
+# t11_whole <- summary_table(AE_B_filter, summary_AE)
+# by_period <- summary_table(group_by(AE_B_filter, Period), summary_AE)
+# table_11 <- cbind(by_period, t11_whole)
+# 
+# t14_whole <- summary_table(AE_C, summary_AE)
+# by_period <- summary_table(group_by(AE_C, Period), summary_AE)
+# table_14 <- cbind(by_period, t14_whole)
+# 
+# write.csv(table_8, "CSR/Table/table_8.csv", row.names = TRUE)
+# write.csv(table_11, "CSR/Table/table_11.csv", row.names = TRUE)
+# write.csv(table_14, "CSR/Table/table_14.csv", row.names = TRUE)
 
-summary_AE <- 
-  list("A" = 
-         list("Number of adverse event" = ~n_perc(!is.na(IP), digits = getOption("qwraps2_frmt_digits", 1)),
-              "Number of adverse drug reaction" = ~n_perc(AEREL %in% c(2,3,4,5),digits = getOption("qwraps2_frmt_digits", 1)),
-              "Number of serious adverse event" = ~n_perc(AESER == 1, digits = getOption("qwraps2_frmt_digits", 1)),
-              "Number of serious adverse drug reaction" = ~n_perc(AEREL %in% c(2,3,4,5) & AESER == 1,  digits = getOption("qwraps2_frmt_digits", 1))
-              )
-       )
 
-
-t8_whole <- summary_table(AE_A, summary_AE)
-by_period <- summary_table(group_by(AE_A, Period), summary_AE)
-table_8 <- cbind(by_period, t8_whole)
-table_8
-
-# add p-value
-p.vals <- frmtp(fisher.test(table(table_8$Period_1, table_8$Period_2))$p.value)
+# p-value 
+.
 
 
