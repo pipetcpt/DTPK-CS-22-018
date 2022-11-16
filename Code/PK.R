@@ -32,6 +32,26 @@ dapa <- data %>%
     filter(ID %ni% c("B140", "B070")) %>%
     as.data.frame()
 
+
+head(dapa)
+
+dapa %>%
+    mutate(Conc = ifelse(Time == 0, 0, Conc)) %>%
+    group_by(Period, Time) %>%
+    summarise(mean = mean(Conc, na.rm = T), sd = sd(Conc, na.rm = T)) %>%
+    ungroup() %>%
+    ggplot() +
+        geom_line(aes(x = Time, y = mean, col = Period)) +
+        geom_point(aes(x = Time, y = mean, col = Period)) + 
+        geom_errorbar(aes(x = Time, ymax = mean + sd, ymin = mean, col = Period)) +
+        theme_bw() +
+        labs(y = "Plasma concentration of dapagliflozin(ng/mL)")
+
+
+dapa %>%
+    ggplot(aes(x = Time, y = Conc, col = Period)) +
+    geom_line()
+
 # DB 수령 후 Real-time 적용 예정
 
 db <- list.files('Data/DB', pattern = "xlsx", full.names = T)
@@ -62,6 +82,7 @@ new_dapa <- dapa %>%
 dapa_NCA <- tblNCA(new_dapa, key = c("Period", "ID"), colTime = "RTime", colConc = "Conc", dose = 100, adm = "Extravascular", R2ADJ = -1, concUnit = 'ng/mL') %>%
     select(Period, ID, CMAX, TMAX, LAMZHL, AUCLST, AUCIFO, CLFO, VZFO) 
 
+
 ## Create summary table 
 dapa_NCA %>%
     select(-ID) %>%
@@ -71,13 +92,15 @@ dapa_NCA %>%
 
 ## Comparative PK
 dapa_BE_raw <- dapa_NCA  %>%
-    mutate(LCMAX = log10(CMAX), LAUCLST = log10(AUCLST))
+    mutate(LCMAX = log(CMAX), LAUCLST = log(AUCLST))
 
 f <- LCMAX ~ Period  # LCMAX, LAUCLST
 # f <- LAUCLST ~ Period 
 
 BE <- lme(f, random = ~1|ID, data = dapa_BE_raw)    
 ci <- intervals(BE, 0.9)
-exp(ci$fixed["Period2기", ])    ## 90% CI result 
+exp(ci$fixed["Period2기", ])   ## 90% CI result  
 
-GLM(f, dapa_BE_raw)$ANOVA     ## Anova result
+head(dapa_BE_raw) %>% write.csv('data.csv', row.names = F)
+GLM(f, dapa_BE_raw)$ANOVA %>% round(4)    ## Anova result
+
