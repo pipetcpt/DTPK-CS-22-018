@@ -19,7 +19,7 @@ set_gtsummary_theme(my_theme)
 theme_gtsummary_compact()
 
 
-
+setwd("~/DTPK-CS-22-018")
 
 ## Dapa prep
 datad <- read_excel('Data/PK/Dapagliflozin.xlsx', sheet = 5, skip = 1)
@@ -76,14 +76,14 @@ dapa_NCA %>%
 
 ## Comparative PK(CMAX)
 dapa_BE_raw <- dapa_NCA  %>%
-  mutate(LCMAX = log10(CMAX), LAUCLST = log10(AUCLST))
+  mutate(LCMAX = log(CMAX), LAUCLST = log(AUCLST))
 
 fc <- LCMAX ~ Period  # LCMAX
 
 
 BEdc <- lme(fc, random = ~1|ID, data = dapa_BE_raw)    
 cidc <- intervals(BEdc, 0.9)
-exp(cidc$fixed["Period2기", ])    ## 90% CI result 
+exp(cidc$fixed["Period2기", ])  %>% round(4)  ## 90% CI result 
 
 GLM(fc, dapa_BE_raw)$ANOVA     ## Anova result
 
@@ -92,13 +92,13 @@ GLM(fc, dapa_BE_raw)$ANOVA     ## Anova result
 
 ## Comparative PK(AUCLST)
 dapa_BE_raw <- dapa_NCA  %>%
-  mutate(LCMAX = log10(CMAX), LAUCLST = log10(AUCLST))
+  mutate(LCMAX = log(CMAX), LAUCLST = log(AUCLST))
 
 fa <- LAUCLST ~ Period  # LAUCLST
 
 BEda <- lme(fa, random = ~1|ID, data = dapa_BE_raw)    
 cida <- intervals(BEda, 0.9)
-exp(cida$fixed["Period2기", ])    ## 90% CI result 
+exp(cida$fixed["Period2기", ])  %>% round(4)   ## 90% CI result 
 
 GLM(fa, dapa_BE_raw)$ANOVA     ## Anova result
 
@@ -157,14 +157,14 @@ metb_NCA %>%
 
 ## Comparative PK(CMAX)
 metb_BE_raw <- metb_NCA  %>%
-  mutate(LCMAX = log10(CMAX), LAUCLST = log10(AUCLST))
+  mutate(LCMAX = log(CMAX), LAUCLST = log(AUCLST))
 
 fmbc <- LCMAX ~ Period  # LCMAX
 
 
 BEmbc <- lme(fmbc, random = ~1|ID, data = metb_BE_raw)    
 cimbc <- intervals(BEmbc, 0.9)
-exp(cimbc$fixed["Period2기", ])    ## 90% CI result 
+exp(cimbc$fixed["Period2기", ])  %>% round(4)   ## 90% CI result 
 
 GLM(fmbc, metb_BE_raw)$ANOVA     ## Anova result
 
@@ -173,13 +173,13 @@ GLM(fmbc, metb_BE_raw)$ANOVA     ## Anova result
 
 ## Comparative PK(AUCLST)
 metb_BE_raw <- metb_NCA  %>%
-  mutate(LCMAX = log10(CMAX), LAUCLST = log10(AUCLST))
+  mutate(LCMAX = log(CMAX), LAUCLST = log(AUCLST))
 
 fmba <- LAUCLST ~ Period  # LAUCLST
 
 BEmba <- lme(fmba, random = ~1|ID, data = metb_BE_raw)    
 cimba <- intervals(BEmba, 0.9)
-exp(cimba$fixed["Period2기", ])    ## 90% CI result 
+exp(cimba$fixed["Period2기", ])  %>% round(4)   ## 90% CI result 
 
 GLM(fmba, metb_BE_raw)$ANOVA     ## Anova result
 
@@ -240,14 +240,14 @@ metc_NCA %>%
 
 ## Comparative PK(CMAX)
 metc_BE_raw <- metc_NCA  %>%
-  mutate(LCMAX = log10(CMAX), LAUCLST = log10(AUCLST))
+  mutate(LCMAX = log(CMAX), LAUCLST = log(AUCLST))
 
 fmcc <- LCMAX ~ Period  # LCMAX
 
 
 BEmcc <- lme(fmcc, random = ~1|ID, data = metc_BE_raw)    
 cimcc <- intervals(BEmcc, 0.9)
-exp(cimcc$fixed["Period2기", ])    ## 90% CI result 
+exp(cimcc$fixed["Period2기", ])   %>% round(4)  ## 90% CI result 
 
 GLM(fmcc, metc_BE_raw)$ANOVA     ## Anova result
 
@@ -256,13 +256,13 @@ GLM(fmcc, metc_BE_raw)$ANOVA     ## Anova result
 
 ## Comparative PK(AUCLST)
 metc_BE_raw <- metc_NCA  %>%
-  mutate(LCMAX = log10(CMAX), LAUCLST = log10(AUCLST))
+  mutate(LCMAX = log(CMAX), LAUCLST = log(AUCLST))
 
 fmca <- LAUCLST ~ Period  # LAUCLST
 
 BEmca <- lme(fmca, random = ~1|ID, data = metc_BE_raw)    
 cimca <- intervals(BEmca, 0.9)
-exp(cimca$fixed["Period2기", ])    ## 90% CI result 
+exp(cimca$fixed["Period2기", ])  %>% round(4)   ## 90% CI result 
 
 GLM(fmca, metc_BE_raw)$ANOVA     ## Anova result
 
@@ -326,27 +326,27 @@ valsaa_NCA %>%
 
 ## Comparative PK(CMAX)
 valsaa_BE_raw <- valsaa_NCA  %>%
-  mutate(LCMAX = log10(CMAX), LAUCLST = log10(AUCLST))
+  mutate(LCMAX = log(CMAX), LAUCLST = log(AUCLST))
 
 fvac <- LCMAX ~ Period  # LCMAX
 
 
 BEvac <- lme(fvac, random = ~1|ID, data = valsaa_BE_raw)    
 civac <- intervals(BEvac, 0.9)
-exp(civac$fixed["Period2기", ])    ## 90% CI result 
+exp(civac$fixed["Period2기", ])   %>% round(4)  ## 90% CI result 
 
 GLM(fvac, valsaa_BE_raw)$ANOVA     ## Anova result
 
 
 ## Comparative PK(AUCLST)
 valsaa_BE_raw <- valsaa_NCA  %>%
-  mutate(LCMAX = log10(CMAX), LAUCLST = log10(AUCLST))
+  mutate(LCMAX = log(CMAX), LAUCLST = log(AUCLST))
 
 fvaa <- LAUCLST ~ Period  # LAUCLST
 
 BEvaa <- lme(fvaa, random = ~1|ID, data = valsaa_BE_raw)    
 civaa <- intervals(BEvaa, 0.9)
-exp(civaa$fixed["Period2기", ])    ## 90% CI result 
+exp(civaa$fixed["Period2기", ])  %>% round(4)   ## 90% CI result 
 
 GLM(fvaa, valsaa_BE_raw)$ANOVA     ## Anova result
 
@@ -404,26 +404,26 @@ valsac_NCA %>%
 
 ## Comparative PK(CMAX)
 valsac_BE_raw <- valsac_NCA  %>%
-  mutate(LCMAX = log10(CMAX), LAUCLST = log10(AUCLST))
+  mutate(LCMAX = log(CMAX), LAUCLST = log(AUCLST))
 
 fvcc <- LCMAX ~ Period  # LCMAX
 
 
 BEvcc <- lme(fvcc, random = ~1|ID, data = valsac_BE_raw)    
 civcc <- intervals(BEvcc, 0.9)
-exp(civcc$fixed["Period2기", ])    ## 90% CI result 
+exp(civcc$fixed["Period2기", ])  %>% round(4)   ## 90% CI result 
 
 GLM(fvcc, valsac_BE_raw)$ANOVA     ## Anova result
 
 
 ## Comparative PK(AUCLST)
 valsac_BE_raw <- valsac_NCA  %>%
-  mutate(LCMAX = log10(CMAX), LAUCLST = log10(AUCLST))
+  mutate(LCMAX = log(CMAX), LAUCLST = log(AUCLST))
 
 fvca <- LAUCLST ~ Period  # LAUCLST
 
 BEvca <- lme(fvca, random = ~1|ID, data = valsac_BE_raw)    
 civca <- intervals(BEvca, 0.9)
-exp(civca$fixed["Period2기", ])    ## 90% CI result 
+exp(civca$fixed["Period2기", ])  %>% round(4)   ## 90% CI result 
 
 GLM(fvca, valsac_BE_raw)$ANOVA     ## Anova result
