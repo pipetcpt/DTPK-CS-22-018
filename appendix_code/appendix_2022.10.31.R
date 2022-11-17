@@ -35,7 +35,7 @@ list.files('sasdata')
 
 ######### FUNCTIONS #########
 source('appendix_code/function/count.mean.sd.r')
-source('appendix_code/function/createtable_v2.r')
+source('appendix_code/function/createtable.r')
 source('appendix_code/function/flextable.r')
 source('appendix_code/function/others.r')
 
@@ -666,27 +666,72 @@ MyFTable_16.4.4 <- flex.table.fun(subIE)
 PE0 <- as.data.frame(read_sas(paste0(data.path, "/", data.files[grepl("\\<pe\\>", data.files)]), NULL))
 PE <- visit.match.fun(infile = PE0, visitData = VST)
 
-PE0<- PE0 %>% 
+PE <- left_join(PE, group_list[c(1,3)], by ="SUBJID")
+
+PE <- PE %>% 
   mutate(SID = SUBJID,
-         PENT = case_when(PE$PENT == 1 ~ "투약 전 (0hr)",
-                          PE$PENT == 2 ~ "투약 후 24hr",
-                          PE$PENT == 3 ~ "투약 후 36hr",
-                          PE$PENT == 4 ~ "투약 후 12hr"))
-         
+         PENT = case_when(grepl("0d|7d", VISIT) & PENT == 1 ~ "투약전(0h)",
+                          grepl("1d|8d", VISIT) & PENT == 1 ~ "투약 후 24hr",
+                          grepl("0d|7d", VISIT) & PENT == 2 ~ "투약 후 4hr",
+                          grepl("1d|8d", VISIT) & PENT == 2 ~ "투약 후 36hr",
+                          PENT == 3 ~ "투약 후 8hr",
+                          PENT == 4 ~ "투약 후 12hr",
+                          TRUE ~ PENT))
+                         
 PE <- PE %>% 
   mutate(time = ifelse(!is.na(PE$PENT),paste(PE$VISIT, PE$PENT, sep = '_'), PE$VISIT))
 
-data <- dcast(PE, SID ~ factor(time, levels = str_sort(unique(PE$time), numeric = T)), value.var = "PENOR") 
- 
+# arm A
+PE.a <- PE %>%  filter(IP == "A")
+data.a <- dcast(PE.a, SID ~ factor(time, levels = str_sort(unique(PE$time), numeric = T)), value.var = "PENOR")
+data.a[data.a==1] <- "Normal Indent"
+data.a[data.a==2] <- "AbNormal Indent"
+data.a[is.na(data.a)] <- "NA"
 
-data[data==1] <- "Normal Indent"
-data[data==2] <- "AbNormal Indent"
-data[is.na(data)] <- "NA"
+subPE.a <- merge(subid,data.a,by=c("SID")) %>% 
+  select("SID", "RID", starts_with("Screening"), starts_with("1기"), starts_with("2기"), everything())
 
-subPE <- merge(subid,data,by=c("SID")) %>% 
-  select("SID", "RID", "Screening  Visit", starts_with("입원일"), starts_with("투여일"), everything())
+# arm B
+PE.b <- PE %>%  filter(IP == "B")
+data.b <- dcast(PE.b, SID ~ factor(time, levels = str_sort(unique(PE$time), numeric = T)), value.var = "PENOR")
+data.b[data.b==1] <- "Normal Indent"
+data.b[data.b==2] <- "AbNormal Indent"
+data.b[is.na(data.b)] <- "NA"
 
-MyFTable_16.4.5 <- flex.table.fun(subPE)
+subPE.b <- merge(subid,data.b,by=c("SID")) %>% 
+  select("SID", "RID", starts_with("Screening"), starts_with("1기"), starts_with("2기"), everything())
+
+# arm C
+PE.c<- PE %>%  filter(IP == "C")
+data.c <- dcast(PE.c, SID ~ factor(time, levels = str_sort(unique(PE$time), numeric = T)), value.var = "PENOR")
+data.c[data.c==1] <- "Normal Indent"
+data.c[data.c==2] <- "AbNormal Indent"
+data.c[is.na(data.c)] <- "NA"
+
+subPE.c <- merge(subid,data.c,by=c("SID")) %>% 
+  select("SID", "RID", starts_with("Screening"), starts_with("1기"), starts_with("2기"), everything())
+
+# drop_out 
+PE.N <- PE %>%  filter(is.na(IP))
+data.N <- dcast(PE.N, SID ~ factor(time, levels = str_sort(unique(PE$time), numeric = T)), value.var = "PENOR")
+data.N[data.N==1] <- "Normal Indent"
+data.N[data.N==2] <- "AbNormal Indent"
+data.N[is.na(data.N)] <- "NA"
+
+subPE.N <- merge(subid,data.N,by=c("SID")) %>% 
+  select("SID", "RID", starts_with("Screening"), starts_with("1기"), starts_with("2기"), everything())
+
+### make table 
+MyFTable_16.4.5.a.1 <- flex.table.fun(subPE.a %>% select(1,2,3,4,8,5,6,7,9,10))
+MyFTable_16.4.5.a.2 <- flex.table.fun(subPE.a %>% select(1,2,12,16,13,14,15,17,18,19,21))
+
+MyFTable_16.4.5.b.1 <- flex.table.fun(subPE.b %>% select(1,2,3,4,8,5,6,7,9,10))
+MyFTable_16.4.5.b.2 <- flex.table.fun(subPE.b %>% select(1,2,11,15,12,13,14,16,17,18,20))
+
+MyFTable_16.4.5.c.1 <- flex.table.fun(subPE.c %>% select(1,2,3,4,8,5,6,7,9,10))
+MyFTable_16.4.5.c.2 <- flex.table.fun(subPE.c %>% select(1,2,11,15,12,13,14,16,17,18))
+
+MyFTable_16.4.5.N <- flex.table.fun(subPE.N)
 
 
 # 16.4.6.1 ~ 16.4.6.5 vital signs - 활력징후
@@ -700,94 +745,303 @@ VS0[is.na(VS0)] <- "-"
 VS <- VS0 %>%
   mutate(SID = SUBJID, 
           newvisit= ifelse(!(is.na(SEQ)), paste(VISIT, VSNT, sep='_'),VISIT)) %>% 
-        merge(subid,.,by=c("SID"))
+  merge(subid,.,by=c("SID"))
 
+VS <- left_join(VS, group_list[c(1,3)], by = "SUBJID")
+VS.a <- VS %>% filter (IP == "A")
+VS.b <- VS %>% filter (IP == "B")
+VS.c <- VS %>% filter (IP == "C")
+VS.N <- VS %>% filter (is.na(IP))
 
-VS0.SYSBP <- flex.table.fun(
-  dcast(VS, SID ~ factor(newvisit,
+# arm A 
+# SYSBP
+VS.SYSBP.a.1 <- flex.table.fun(
+  dcast(VS.a, SID ~ factor(newvisit,
                                levels = str_sort(
-                                 unique(VS$newvisit), numeric = T
-                               )),
+                                 unique(VS.a$newvisit), numeric = T)),
         value.var = "SYSBP") %>%
     merge(subid,.,by=c("SID")) %>% 
-    select("SID", "RID", "Screening  Visit_", starts_with("입원일"), starts_with("투여일"), everything()),  calc_ = TRUE
-    
-)
+    select("SID", "RID", starts_with("Screening"), starts_with("1기")),  calc_ = TRUE)
+
+VS.SYSBP.a.2 <- flex.table.fun(
+  dcast(VS.a, SID ~ factor(newvisit,
+                           levels = str_sort(
+                             unique(VS.a$newvisit), numeric = T)),
+        value.var = "SYSBP") %>%
+    merge(subid,.,by=c("SID")) %>% 
+    select("SID", "RID", starts_with("2기")),  calc_ = TRUE)
 
 
 # BPSYS
-
-VS0.BPSYS <- flex.table.fun(
-  dcast(VS, SID ~ factor(newvisit,
+VS.BPSYS.a.1 <- flex.table.fun(
+  dcast(VS.a, SID ~ factor(newvisit,
                                levels = str_sort(
-                                 unique(VS$newvisit), numeric = T
-                               )),
+                                 unique(VS.a$newvisit), numeric = T)),
         value.var = "DIABP") %>%
     merge(subid,.,by=c("SID")) %>% 
-    select("SID", "RID", "Screening  Visit_", starts_with("입원일"), starts_with("투여일"), everything()),
-  calc_ = TRUE
-)
+    select("SID", "RID", starts_with("Screening"), starts_with("1기")), calc_ = TRUE)
+
+VS.BPSYS.a.2 <- flex.table.fun(
+  dcast(VS.a, SID ~ factor(newvisit,
+                           levels = str_sort(
+                             unique(VS.a$newvisit), numeric = T)),
+        value.var = "DIABP") %>%
+    merge(subid,.,by=c("SID")) %>% 
+    select("SID", "RID", starts_with("2기")), calc_ = TRUE)
+
+# PULSE
+VS.PL.a.1 <- flex.table.fun(
+  dcast(VS.a, SID ~ factor(newvisit,
+                               levels = str_sort(
+                                 unique(VS.a$newvisit), numeric = T)),
+        value.var = "PULSE") %>%
+    merge(subid,.,by=c("SID")) %>% 
+    select("SID", "RID", starts_with("Screening"), starts_with("1기")),calc_ = TRUE)
+
+VS.PL.a.2 <- flex.table.fun(
+  dcast(VS.a, SID ~ factor(newvisit,
+                           levels = str_sort(
+                             unique(VS.a$newvisit), numeric = T)),
+        value.var = "PULSE") %>%
+    merge(subid,.,by=c("SID")) %>% 
+    select("SID", "RID", starts_with("2기")),calc_ = TRUE)
+
+# TEMP
+VS.TEMP.a.1 <- flex.table.fun(
+  dcast(VS.a, SID ~ factor(newvisit,
+                               levels = str_sort(
+                                 unique(VS.a$newvisit), numeric = T)),
+        value.var = "TEMP") %>%
+    merge(subid,.,by=c("SID")) %>% 
+    select("SID", "RID", starts_with("Screening"), starts_with("1기")),calc_ = TRUE)
+
+VS.TEMP.a.2 <- flex.table.fun(
+  dcast(VS.a, SID ~ factor(newvisit,
+                           levels = str_sort(
+                             unique(VS.a$newvisit), numeric = T)),
+        value.var = "TEMP") %>%
+    merge(subid,.,by=c("SID")) %>% 
+    select("SID", "RID", starts_with("2기")),calc_ = TRUE)
+
+
+# arm B 
+# SYSBP
+VS.SYSBP.b.1 <- flex.table.fun(
+  dcast(VS.b, SID ~ factor(newvisit,
+                           levels = str_sort(
+                             unique(VS.b$newvisit), numeric = T)),
+        value.var = "SYSBP") %>%
+    merge(subid,.,by=c("SID")) %>% 
+    select("SID", "RID", starts_with("Screening"), starts_with("1기")),  calc_ = TRUE)
+
+VS.SYSBP.b.2 <- flex.table.fun(
+  dcast(VS.b, SID ~ factor(newvisit,
+                           levels = str_sort(
+                             unique(VS.b$newvisit), numeric = T)),
+        value.var = "SYSBP") %>%
+    merge(subid,.,by=c("SID")) %>% 
+    select("SID", "RID", starts_with("2기")),  calc_ = TRUE)
+
+
+# BPSYS
+VS.BPSYS.b.1 <- flex.table.fun(
+  dcast(VS.b, SID ~ factor(newvisit,
+                           levels = str_sort(
+                             unique(VS.b$newvisit), numeric = T)),
+        value.var = "DIABP") %>%
+    merge(subid,.,by=c("SID")) %>% 
+    select("SID", "RID", starts_with("Screening"), starts_with("1기")), calc_ = TRUE)
+
+VS.BPSYS.b.2 <- flex.table.fun(
+  dcast(VS.b, SID ~ factor(newvisit,
+                           levels = str_sort(
+                             unique(VS.b$newvisit), numeric = T)),
+        value.var = "DIABP") %>%
+    merge(subid,.,by=c("SID")) %>% 
+    select("SID", "RID", starts_with("2기")), calc_ = TRUE)
+
+# PULSE
+VS.PL.b.1 <- flex.table.fun(
+  dcast(VS.b, SID ~ factor(newvisit,
+                           levels = str_sort(
+                             unique(VS.b$newvisit), numeric = T)),
+        value.var = "PULSE") %>%
+    merge(subid,.,by=c("SID")) %>% 
+    select("SID", "RID", starts_with("Screening"), starts_with("1기")),calc_ = TRUE)
+
+VS.PL.b.2 <- flex.table.fun(
+  dcast(VS.b, SID ~ factor(newvisit,
+                           levels = str_sort(
+                             unique(VS.b$newvisit), numeric = T)),
+        value.var = "PULSE") %>%
+    merge(subid,.,by=c("SID")) %>% 
+    select("SID", "RID", starts_with("2기")),calc_ = TRUE)
+
+# TEMP
+VS.TEMP.b.1 <- flex.table.fun(
+  dcast(VS.b, SID ~ factor(newvisit,
+                           levels = str_sort(
+                             unique(VS.b$newvisit), numeric = T)),
+        value.var = "TEMP") %>%
+    merge(subid,.,by=c("SID")) %>% 
+    select("SID", "RID", starts_with("Screening"), starts_with("1기")),calc_ = TRUE)
+
+VS.TEMP.b.2 <- flex.table.fun(
+  dcast(VS.b, SID ~ factor(newvisit,
+                           levels = str_sort(
+                             unique(VS.b$newvisit), numeric = T)),
+        value.var = "TEMP") %>%
+    merge(subid,.,by=c("SID")) %>% 
+    select("SID", "RID", starts_with("2기")),calc_ = TRUE)
+
+
+
+# arm C 
+# SYSBP
+VS.SYSBP.c.1 <- flex.table.fun(
+  dcast(VS.c, SID ~ factor(newvisit,
+                           levels = str_sort(
+                             unique(VS.c$newvisit), numeric = T)),
+        value.var = "SYSBP") %>%
+    merge(subid,.,by=c("SID")) %>% 
+    select("SID", "RID", starts_with("Screening"), starts_with("1기")),  calc_ = TRUE)
+
+VS.SYSBP.c.2 <- flex.table.fun(
+  dcast(VS.c, SID ~ factor(newvisit,
+                           levels = str_sort(
+                             unique(VS.c$newvisit), numeric = T)),
+        value.var = "SYSBP") %>%
+    merge(subid,.,by=c("SID")) %>% 
+    select("SID", "RID", starts_with("2기")),  calc_ = TRUE)
+
+
+# BPSYS
+VS.BPSYS.c.1 <- flex.table.fun(
+  dcast(VS.c, SID ~ factor(newvisit,
+                           levels = str_sort(
+                             unique(VS.c$newvisit), numeric = T)),
+        value.var = "DIABP") %>%
+    merge(subid,.,by=c("SID")) %>% 
+    select("SID", "RID", starts_with("Screening"), starts_with("1기")), calc_ = TRUE)
+
+VS.BPSYS.c.2 <- flex.table.fun(
+  dcast(VS.c, SID ~ factor(newvisit,
+                           levels = str_sort(
+                             unique(VS.c$newvisit), numeric = T)),
+        value.var = "DIABP") %>%
+    merge(subid,.,by=c("SID")) %>% 
+    select("SID", "RID", starts_with("2기")), calc_ = TRUE)
+
+# PULSE
+VS.PL.c.1 <- flex.table.fun(
+  dcast(VS.c, SID ~ factor(newvisit,
+                           levels = str_sort(
+                             unique(VS.c$newvisit), numeric = T)),
+        value.var = "PULSE") %>%
+    merge(subid,.,by=c("SID")) %>% 
+    select("SID", "RID", starts_with("Screening"), starts_with("1기")),calc_ = TRUE)
+
+VS.PL.c.2 <- flex.table.fun(
+  dcast(VS.c, SID ~ factor(newvisit,
+                           levels = str_sort(
+                             unique(VS.c$newvisit), numeric = T)),
+        value.var = "PULSE") %>%
+    merge(subid,.,by=c("SID")) %>% 
+    select("SID", "RID", starts_with("2기")),calc_ = TRUE)
+
+# TEMP
+VS.TEMP.c.1 <- flex.table.fun(
+  dcast(VS.c, SID ~ factor(newvisit,
+                           levels = str_sort(
+                             unique(VS.c$newvisit), numeric = T)),
+        value.var = "TEMP") %>%
+    merge(subid,.,by=c("SID")) %>% 
+    select("SID", "RID", starts_with("Screening"), starts_with("1기")),calc_ = TRUE)
+
+VS.TEMP.c.2 <- flex.table.fun(
+  dcast(VS.c, SID ~ factor(newvisit,
+                           levels = str_sort(
+                             unique(VS.c$newvisit), numeric = T)),
+        value.var = "TEMP") %>%
+    merge(subid,.,by=c("SID")) %>% 
+    select("SID", "RID", starts_with("2기")),calc_ = TRUE)
+
+
+# arm 중도탈락자
+# SYSBP
+VS.SYSBP.N <- flex.table.fun(
+  dcast(VS.N, SID ~ factor(newvisit,
+                           levels = str_sort(
+                             unique(VS.N$newvisit), numeric = T)),
+        value.var = "SYSBP") %>%
+    merge(subid,.,by=c("SID")) %>% 
+    select("SID", "RID", starts_with("Screening"), starts_with("1기")),  calc_ = TRUE)
+
+
+# BPSYS
+VS.NPSYS.N <- flex.table.fun(
+  dcast(VS.N, SID ~ factor(newvisit,
+                           levels = str_sort(
+                             unique(VS.N$newvisit), numeric = T)),
+        value.var = "DIABP") %>%
+    merge(subid,.,by=c("SID")) %>% 
+    select("SID", "RID", starts_with("Screening"), starts_with("1기")), calc_ = TRUE)
 
 
 # PULSE
-VS0.PL <- flex.table.fun(
-  dcast(VS, SID ~ factor(newvisit,
-                               levels = str_sort(
-                                 unique(VS$newvisit), numeric = T
-                               )),
+VS.PL.N <- flex.table.fun(
+  dcast(VS.N, SID ~ factor(newvisit,
+                           levels = str_sort(
+                             unique(VS.N$newvisit), numeric = T)),
         value.var = "PULSE") %>%
     merge(subid,.,by=c("SID")) %>% 
-    select("SID", "RID", "Screening  Visit_", starts_with("입원일"), starts_with("투여일"), everything()),
-  calc_ = TRUE
-)
-
+    select("SID", "RID", starts_with("Screening"), starts_with("1기")),calc_ = TRUE)
 
 
 # TEMP
-VS0.TEMP <- flex.table.fun(
-  dcast(VS, SID ~ factor(newvisit,
-                               levels = str_sort(
-                                 unique(VS$newvisit), numeric = T
-                               )),
+VS.TEMP.N <- flex.table.fun(
+  dcast(VS.N, SID ~ factor(newvisit,
+                           levels = str_sort(
+                             unique(VS.N$newvisit), numeric = T)),
         value.var = "TEMP") %>%
     merge(subid,.,by=c("SID")) %>% 
-    select("SID", "RID", "Screening  Visit_", starts_with("입원일"), starts_with("투여일"), everything()),
-  calc_ = TRUE
-)
+    select("SID", "RID", starts_with("Screening"), starts_with("1기")),calc_ = TRUE)
 
 
 # 16.4.7 - LEAD 심전도 
 # Main
 EG0 <- as.data.frame(read_sas(paste0(data.path, "/", data.files[grepl("\\<eg\\>", data.files)]), NULL))
 EG <- visit.match.fun(infile = EG0, visitData = VST) %>% filter(is.na(EGND))
+EG <- left_join(EG, group_list[c(1,3)], by = "SUBJID") %>% 
+  rename(SID = SUBJID)
 
+EG.a <- EG %>% filter(IP == "A") 
+EG.b <- EG %>% filter(IP == "B") 
+EG.c <- EG %>% filter(IP == "C") 
+EG.N <- EG %>% filter(is.na(IP)) 
 
-#View(EG)
-EG <- EG %>%
-  mutate(SID = SUBJID)
-
-EGVR <- flex.table.fun(dcast(EG, SID~factor(VISIT, levels=str_sort(unique(EG$VISIT), numeric=T)), value.var = "EGHR")%>%
+# arm A 
+EGVR.a <- flex.table.fun(dcast(EG.a, SID~factor(VISIT, levels=str_sort(unique(EG$VISIT), numeric=T)), value.var = "EGVR")%>%
                           merge(subid,.,by=c("SID")) %>% 
-                         select("SID", "RID", "Screening  Visit","투여일(5d)", "UV1"),calc_= TRUE)
+                         select("SID", "RID", "Screening",starts_with("1기"), starts_with("2기"), everything()), calc_= TRUE)
 
-EGPR <- flex.table.fun(dcast(EG, SID~factor(VISIT, levels=str_sort(unique(EG$VISIT), numeric=T)), value.var = "EGPR")%>%
+EGPR.a <- flex.table.fun(dcast(EG.a, SID~factor(VISIT, levels=str_sort(unique(EG$VISIT), numeric=T)), value.var = "EGPR")%>%
                           merge(subid,.,by=c("SID")) %>% 
-                         select("SID", "RID", "Screening  Visit","투여일(5d)", "UV1"),calc_= TRUE)
+                         select("SID", "RID", "Screening",starts_with("1기"), starts_with("2기"),everything()),calc_= TRUE)
 
-EGQRSD <- flex.table.fun(dcast(EG, SID~factor(VISIT, levels=str_sort(unique(EG$VISIT), numeric=T)), value.var = "EGQRS")%>%
+EGQRSD.a <- flex.table.fun(dcast(EG.a, SID~factor(VISIT, levels=str_sort(unique(EG$VISIT), numeric=T)), value.var = "EGQRSD")%>%
                           merge(subid,.,by=c("SID")) %>% 
-                           select("SID", "RID", "Screening  Visit","투여일(5d)", "UV1"),calc_= TRUE)
+                           select("SID", "RID", "Screening",starts_with("1기"), starts_with("2기"), everything()),calc_= TRUE)
 
-EGQT <- flex.table.fun(dcast(EG, SID~factor(VISIT, levels=str_sort(unique(EG$VISIT), numeric=T)), value.var = "EGQT")%>%
+EGQT.a <- flex.table.fun(dcast(EG.a, SID~factor(VISIT, levels=str_sort(unique(EG$VISIT), numeric=T)), value.var = "EGQT")%>%
                           merge(subid,.,by=c("SID")) %>% 
-                         select("SID", "RID", "Screening  Visit","투여일(5d)", "UV1"),calc_= TRUE)
+                         select("SID", "RID", "Screening",starts_with("1기"), starts_with("2기"), everything()),calc_= TRUE)
 
-EGQTC <- flex.table.fun(dcast(EG, SID~factor(VISIT, levels=str_sort(unique(EG$VISIT), numeric=T)), value.var = "EGQTC")%>%
+EGQTC.a <- flex.table.fun(dcast(EG.a, SID~factor(VISIT, levels=str_sort(unique(EG$VISIT), numeric=T)), value.var = "EGQTC")%>%
                           merge(subid,.,by=c("SID")) %>% 
-                          select("SID", "RID", "Screening  Visit","투여일(5d)", "UV1"),calc_= TRUE)
+                          select("SID", "RID", "Screening",starts_with("1기"), starts_with("2기"), everything()),calc_= TRUE)
 
-ECGNORM <- EG %>%
-  mutate(SID = SUBJID) %>%
+ECGNORM.a <- EG.a %>%
   select(SID, VISIT, EGNOR) %>%
   distinct(SID, VISIT, EGNOR) %>%
   mutate(EGNOR = case_when(EGNOR == 1 ~ "정상",
@@ -796,12 +1050,189 @@ ECGNORM <- EG %>%
                            TRUE ~ as.character(EGNOR)))
 
 
-ECGNORM1 <- dcast(ECGNORM, SID~VISIT, value.var = "EGNOR") %>% merge(subid,.,by=c("SID")) %>% 
-  select("SID", "RID", "Screening  Visit", starts_with("투여일"), everything())
+ECGNORM1.a <- dcast(ECGNORM.a, SID~VISIT, value.var = "EGNOR") %>% merge(subid,.,by=c("SID")) %>% 
+  select("SID", "RID", "Screening", starts_with("1기"), starts_with("2기"), everything())
 
-ECGNORM1[is.na(ECGNORM1)] <- "NA"
+ECGNORM1.a[is.na(ECGNORM1.a)] <- "NA"
 
-ECGNORM <- flex.table.fun(ECGNORM1, calc_ = FALSE)
+ECGNORM.a <- flex.table.fun(ECGNORM1.a, calc_ = FALSE)
+
+
+
+# arm B 
+EGVR.b <- flex.table.fun(dcast(EG.b, SID~factor(VISIT, levels=str_sort(unique(EG$VISIT), numeric=T)), value.var = "EGVR")%>%
+                           merge(subid,.,by=c("SID")) %>% 
+                           select("SID", "RID", "Screening",starts_with("1기"), starts_with("2기"), everything()), calc_= TRUE)
+
+EGPR.b <- flex.table.fun(dcast(EG.b, SID~factor(VISIT, levels=str_sort(unique(EG$VISIT), numeric=T)), value.var = "EGPR")%>%
+                           merge(subid,.,by=c("SID")) %>% 
+                           select("SID", "RID", "Screening",starts_with("1기"), starts_with("2기"),everything()),calc_= TRUE)
+
+EGQRSD.b <- flex.table.fun(dcast(EG.b, SID~factor(VISIT, levels=str_sort(unique(EG$VISIT), numeric=T)), value.var = "EGQRSD")%>%
+                             merge(subid,.,by=c("SID")) %>% 
+                             select("SID", "RID", "Screening",starts_with("1기"), starts_with("2기"), everything()),calc_= TRUE)
+
+EGQT.b <- flex.table.fun(dcast(EG.b, SID~factor(VISIT, levels=str_sort(unique(EG$VISIT), numeric=T)), value.var = "EGQT")%>%
+                           merge(subid,.,by=c("SID")) %>% 
+                           select("SID", "RID", "Screening",starts_with("1기"), starts_with("2기"), everything()),calc_= TRUE)
+
+EGQTC.b <- flex.table.fun(dcast(EG.b, SID~factor(VISIT, levels=str_sort(unique(EG$VISIT), numeric=T)), value.var = "EGQTC")%>%
+                            merge(subid,.,by=c("SID")) %>% 
+                            select("SID", "RID", "Screening",starts_with("1기"), starts_with("2기"), everything()),calc_= TRUE)
+
+ECGNORM.b <- EG.b %>%
+  select(SID, VISIT, EGNOR) %>%
+  distinct(SID, VISIT, EGNOR) %>%
+  mutate(EGNOR = case_when(EGNOR == 1 ~ "정상",
+                           EGNOR == 2 ~ "비정상/NCS",
+                           EGNOR == 3 ~ "비정상/CS",
+                           TRUE ~ as.character(EGNOR)))
+
+
+ECGNORM1.b <- dcast(ECGNORM.b, SID~VISIT, value.var = "EGNOR") %>% merge(subid,.,by=c("SID")) %>% 
+  select("SID", "RID", "Screening", starts_with("1기"), starts_with("2기"), everything())
+
+ECGNORM1.b[is.na(ECGNORM1.b)] <- "NA"
+
+ECGNORM.b <- flex.table.fun(ECGNORM1.b, calc_ = FALSE)
+
+
+# arm C 
+EGVR.c <- flex.table.fun(dcast(EG.c, SID~factor(VISIT, levels=str_sort(unique(EG$VISIT), numeric=T)), value.var = "EGVR")%>%
+                           merge(subid,.,by=c("SID")) %>% 
+                           select("SID", "RID", "Screening",starts_with("1기"), starts_with("2기"), everything()), calc_= TRUE)
+
+EGPR.c <- flex.table.fun(dcast(EG.c, SID~factor(VISIT, levels=str_sort(unique(EG$VISIT), numeric=T)), value.var = "EGPR")%>%
+                           merge(subid,.,by=c("SID")) %>% 
+                           select("SID", "RID", "Screening",starts_with("1기"), starts_with("2기"),everything()),calc_= TRUE)
+
+EGQRSD.c <- flex.table.fun(dcast(EG.c, SID~factor(VISIT, levels=str_sort(unique(EG$VISIT), numeric=T)), value.var = "EGQRSD")%>%
+                             merge(subid,.,by=c("SID")) %>% 
+                             select("SID", "RID", "Screening",starts_with("1기"), starts_with("2기"), everything()),calc_= TRUE)
+
+EGQT.c <- flex.table.fun(dcast(EG.c, SID~factor(VISIT, levels=str_sort(unique(EG$VISIT), numeric=T)), value.var = "EGQT")%>%
+                           merge(subid,.,by=c("SID")) %>% 
+                           select("SID", "RID", "Screening",starts_with("1기"), starts_with("2기"), everything()),calc_= TRUE)
+
+EGQTC.c <- flex.table.fun(dcast(EG.c, SID~factor(VISIT, levels=str_sort(unique(EG$VISIT), numeric=T)), value.var = "EGQTC")%>%
+                            merge(subid,.,by=c("SID")) %>% 
+                            select("SID", "RID", "Screening",starts_with("1기"), starts_with("2기"), everything()),calc_= TRUE)
+
+ECGNORM.c <- EG.c %>%
+  select(SID, VISIT, EGNOR) %>%
+  distinct(SID, VISIT, EGNOR) %>%
+  mutate(EGNOR = case_when(EGNOR == 1 ~ "정상",
+                           EGNOR == 2 ~ "비정상/NCS",
+                           EGNOR == 3 ~ "비정상/CS",
+                           TRUE ~ as.character(EGNOR)))
+
+
+ECGNORM1.c <- dcast(ECGNORM.c, SID~VISIT, value.var = "EGNOR") %>% merge(subid,.,by=c("SID")) %>% 
+  select("SID", "RID", "Screening", starts_with("1기"), starts_with("2기"), everything())
+
+ECGNORM1.c[is.na(ECGNORM1.c)] <- "NA"
+
+ECGNORM.c <- flex.table.fun(ECGNORM1.c, calc_ = FALSE)
+
+# arm drop-out
+EGVR.N <- flex.table.fun(dcast(EG.N, SID~factor(VISIT, levels=str_sort(unique(EG$VISIT), numeric=T)), value.var = "EGVR")%>%
+                           merge(subid,.,by=c("SID")) %>% 
+                           select("SID", "RID", "Screening",starts_with("1기"), starts_with("2기"), everything()), calc_= TRUE)
+
+EGPR.N <- flex.table.fun(dcast(EG.N, SID~factor(VISIT, levels=str_sort(unique(EG$VISIT), numeric=T)), value.var = "EGPR")%>%
+                           merge(subid,.,by=c("SID")) %>% 
+                           select("SID", "RID", "Screening",starts_with("1기"), starts_with("2기"),everything()),calc_= TRUE)
+
+EGQRSD.N <- flex.table.fun(dcast(EG.N, SID~factor(VISIT, levels=str_sort(unique(EG$VISIT), numeric=T)), value.var = "EGQRSD")%>%
+                             merge(subid,.,by=c("SID")) %>% 
+                             select("SID", "RID", "Screening",starts_with("1기"), starts_with("2기"), everything()),calc_= TRUE)
+
+EGQT.N <- flex.table.fun(dcast(EG.N, SID~factor(VISIT, levels=str_sort(unique(EG$VISIT), numeric=T)), value.var = "EGQT")%>%
+                           merge(subid,.,by=c("SID")) %>% 
+                           select("SID", "RID", "Screening",starts_with("1기"), starts_with("2기"), everything()),calc_= TRUE)
+
+EGQTC.N <- flex.table.fun(dcast(EG.N, SID~factor(VISIT, levels=str_sort(unique(EG$VISIT), numeric=T)), value.var = "EGQTC")%>%
+                            merge(subid,.,by=c("SID")) %>% 
+                            select("SID", "RID", "Screening",starts_with("1기"), starts_with("2기"), everything()),calc_= TRUE)
+
+ECGNORM.N <- EG.N %>%
+  select(SID, VISIT, EGNOR) %>%
+  distinct(SID, VISIT, EGNOR) %>%
+  mutate(EGNOR = case_when(EGNOR == 1 ~ "정상",
+                           EGNOR == 2 ~ "비정상/NCS",
+                           EGNOR == 3 ~ "비정상/CS",
+                           TRUE ~ as.character(EGNOR)))
+
+
+ECGNORM1.N <- dcast(ECGNORM.N, SID~VISIT, value.var = "EGNOR") %>% merge(subid,.,by=c("SID")) %>% 
+  select("SID", "RID", "Screening", starts_with("1기"), starts_with("2기"), everything())
+
+ECGNORM1.N[is.na(ECGNORM1.N)] <- "NA"
+
+ECGNORM.N <- flex.table.fun(ECGNORM1.N, calc_ = FALSE)
+
+
+# 16.4.8 혈당
+# 16.4.8.1 BST
+BS0 <- as.data.frame(read_sas(paste0(data.path, "/", data.files[grepl("\\<bs\\>", data.files)]), NULL))
+BS0 <- visit.match.fun(infile = BS0, visitData = VST)
+BS <- left_join(BS0, group_list[c(1,3)] , by = "SUBJID")
+
+# arm A 
+BS.a <- BS %>%
+  filter(IP == "A") %>% 
+  mutate(SID = SUBJID, 
+         newvisit= ifelse(!(is.na(SEQ)), paste(VISIT, BSNT, sep='_'),VISIT)) %>% 
+  merge(subid,.,by=c("SID"))
+
+
+BST.a <- flex.table.fun(
+  dcast(BS.a, SID ~ factor(newvisit,
+                         levels = str_sort(
+                           unique(BS.a$newvisit), numeric = T)),
+        value.var = "BSVAL") %>%
+    merge(subid,., by=c("SID")) %>% 
+    select(SID,RID, starts_with("1기"), everything()),  calc_ = TRUE)
+
+
+# arm B 
+BS.b <- BS %>%
+  filter(IP == "B") %>% 
+  mutate(SID = SUBJID, 
+         newvisit= ifelse(!(is.na(SEQ)), paste(VISIT, BSNT, sep='_'),VISIT)) %>% 
+  merge(subid,.,by=c("SID"))
+
+
+BST.b <- flex.table.fun(
+  dcast(BS.b, SID ~ factor(newvisit,levels = str_sort(unique(BS.b$newvisit), numeric = T)),
+        value.var = "BSVAL") %>%
+    merge(subid,., by=c("SID")) %>% 
+    select("SID","RID", starts_with("1기"), everything()),  calc_ = TRUE)
+
+# arm C 
+BS.c <- BS %>%
+  filter(IP == "C") %>% 
+  mutate(SID = SUBJID, 
+         newvisit= ifelse(!(is.na(SEQ)), paste(VISIT, BSNT, sep='_'),VISIT)) %>% 
+  merge(subid,.,by=c("SID"))
+
+
+BST.c <- flex.table.fun(
+  dcast(BS.c, SID ~ factor(newvisit,levels = str_sort(unique(BS.c$newvisit), numeric = T)),
+        value.var = "BSVAL") %>%
+    merge(subid,., by=c("SID")) %>% 
+    select("SID","RID", starts_with("1기"), everything()),  calc_ = TRUE)
+
+
+
+# # 16.4.8.2 BST follow up
+# BF0 <- as.data.frame(read_sas(paste0(data.path, "/", data.files[grepl("\\<bf\\>", data.files)]), NULL))
+# BF0 <- visit.match.fun(infile = BF0, visitData = VST)
+# BF <- BF0[,c(1,2,4,5)] %>% arrange(VISIT)
+# colnames(BF) <- c("SID","visit","측정시점","결과(mg/dL)")
+# subBF <- flex.table.fun(merge(subid,BF,by=c("SID")))
+
+
 
 #안과검사
 #####
@@ -959,8 +1390,8 @@ ECGNORM <- flex.table.fun(ECGNORM1, calc_ = FALSE)
 ###       Doc & Table      ###
 ##############################
 
-old <- set_flextable_defaults(font.family = "Times New Roman")
-do.call(set_flextable_defaults,old)
+# old <- set_flextable_defaults(font.family = "Times New Roman")
+# do.call(set_flextable_defaults,old)
 
 doc <- read_docx(path = "C:/Users/Owner/Documents/GitHub/Template/Template.docx")
 doc <- body_add_par(doc, "Appendix", style = "heading 1") #1
@@ -1023,10 +1454,21 @@ doc <- body_add_break(doc)
 doc <- body_end_section_continuous(doc) # 가로 시작
 doc <- body_add_par(doc, "순응도 및 혈중농도 자료", style = "heading 3") #1.2.5
 doc <- body_add_par(doc, "16.2.5.1 시험대상자별 개별 투약 시간", style="Normal Indent")
-doc <- body_add_flextable(doc, MyFTable_16.2.5.1)
-doc <- body_add_break(doc)
-doc <- body_end_section_landscape(doc) #가로 끝
 
+doc <- body_add_par(doc, "■ Arm A", style = "Normal Indent" )
+doc <- body_add_flextable(doc, MyFTable_16.2.5.1.a)
+doc <- body_add_break(doc)
+
+doc <- body_add_par(doc, "■ Arm B", style = "Normal Indent" )
+doc <- body_add_flextable(doc, MyFTable_16.2.5.1.b)
+doc <- body_add_break(doc)
+
+doc <- body_add_par(doc, "■ Arm C", style = "Normal Indent" )
+doc <- body_add_flextable(doc, MyFTable_16.2.5.1.c)
+doc <- body_add_break(doc)
+
+doc <- body_end_section_landscape(doc) #가로 끝
+######################################
 doc <- body_add_par(doc, "1.2.5.2 시험대상자별 혈장 내 농도 (Period 1 Tamsulosin)", style="Normal Indent")
 doc <- body_add_break(doc)
 doc <- body_add_par(doc, "1.2.5.3 시험대상자별 혈장 내 농도 (Period 2 Mirabegron)", style="Normal Indent")
@@ -1045,14 +1487,27 @@ doc <- body_add_par(doc, "1.2.6.3 시험대상자별 혈중농도 프로파일 (
 doc <- body_add_break(doc)
 doc <- body_add_par(doc, "1.2.6.4 시험대상자별 혈중농도 프로파일 (Mirabegron)", style="Normal Indent")
 doc <- body_add_break(doc)
-
-doc <- body_end_section_continuous(doc) # 가로 시작
-doc <- body_add_par(doc, "1.2.6.5 시험대상자별 채혈수행시각", style="Normal Indent") #마리아 선생님께 받아야함
-doc <- body_add_flextable(doc, MyFTable_16.2.6.5.1)
-doc <- body_add_break(doc)
-doc <- body_add_flextable(doc, MyFTable_16.2.6.5.2)
-doc <- body_add_break(doc)
 ####################################
+doc <- body_end_section_continuous(doc) # 가로 시작
+doc <- body_add_par(doc, "1.2.6.5 시험대상자별 채혈수행시각", style="Normal Indent") 
+
+doc <- body_add_par(doc, "■ Arm A", style = "Normal Indent" )
+doc <- body_add_flextable(doc, MyFTable_16.2.6.5.a1)
+doc <- body_add_break(doc)
+doc <- body_add_flextable(doc, MyFTable_16.2.6.5.a2)
+doc <- body_add_break(doc)
+
+doc <- body_add_par(doc, "■ Arm B", style = "Normal Indent" )
+doc <- body_add_flextable(doc, MyFTable_16.2.6.5.b1)
+doc <- body_add_break(doc)
+doc <- body_add_flextable(doc, MyFTable_16.2.6.5.b2)
+doc <- body_add_break(doc)
+
+doc <- body_add_par(doc, "■ Arm C", style = "Normal Indent" )
+doc <- body_add_flextable(doc, MyFTable_16.2.6.5.c1)
+doc <- body_add_break(doc)
+doc <- body_add_flextable(doc, MyFTable_16.2.6.5.c2)
+doc <- body_add_break(doc)
 
 #doc <- body_end_section_continuous(doc) # 가로 시작
 doc <- body_end_section_landscape(doc) #가로 끝
@@ -1076,7 +1531,7 @@ doc <- body_add_par(doc, "시험대상자별 자료 목록", style = "heading 2"
 doc <- body_add_par(doc, "선행약물 또는 병행 약물", style = "heading 3") # 1.4.1
 doc <- body_add_flextable(doc, MyFTable_16.4.1)
 doc <- body_add_break(doc)
-doc <- body_end_section_landscape(doc) #가로 끝
+#doc <- body_end_section_landscape(doc) #가로 끝
 
 
 doc <- body_add_par(doc, "실험실적 검사", style = "heading 3") 	#1.4.2
@@ -1252,6 +1707,9 @@ doc <- body_add_par(doc,paste0("■",name_map1$AnalyteName[32]), style = "Normal
 doc <- body_add_flextable(doc, MyFTable_16.4.2.1To16.4.2.33[[32]])
 doc <- body_add_break(doc)
 
+doc <- body_add_par(doc,paste0("■",name_map1$AnalyteName[33]), style = "Normal Indent")
+doc <- body_add_flextable(doc, MyFTable_16.4.2.1To16.4.2.33[[33]])
+doc <- body_add_break(doc)
 
 #####
 # doc <- body_add_flextable(doc, MyFTable_16.4.2.1To16.4.2.33[[14]])
@@ -1436,97 +1894,262 @@ doc <- body_add_break(doc)
 
 doc <- body_end_section_continuous(doc) # 가로 시작
 doc <- body_add_par(doc, "신체 검사", style = "heading 3") 	#16.4.5
-doc <- body_add_flextable(doc, MyFTable_16.4.5)
+
+doc <- body_add_par(doc, "■ Arm A", style = "Normal Indent" )
+doc <- body_add_flextable(doc, MyFTable_16.4.5.a.1)
 doc <- body_add_break(doc)
+doc <- body_add_flextable(doc, MyFTable_16.4.5.a.2)
+doc <- body_add_break(doc)
+
+doc <- body_add_par(doc, "■ Arm B", style = "Normal Indent" )
+doc <- body_add_flextable(doc, MyFTable_16.4.5.b.1)
+doc <- body_add_break(doc)
+doc <- body_add_flextable(doc, MyFTable_16.4.5.b.2)
+doc <- body_add_break(doc)
+
+doc <- body_add_par(doc, "■ Arm C", style = "Normal Indent" )
+doc <- body_add_flextable(doc, MyFTable_16.4.5.c.1)
+doc <- body_add_break(doc)
+doc <- body_add_flextable(doc, MyFTable_16.4.5.c.2)
+doc <- body_add_break(doc)
+
+doc <- body_add_par(doc, "■ 스크리닝 탈락자", style = "Normal Indent" )
+doc <- body_add_flextable(doc, MyFTable_16.4.5.N)
+doc <- body_add_break(doc)
+
 
 doc <- body_add_par(doc, "활력 징후", style = "heading 3") # 16.4.6
 doc <- body_add_par(doc, "16.4.6.1 활력징후[SBP]", style="heading 4")
-doc <- body_add_flextable(doc, VS0.SYSBP)
+
+doc <- body_add_par(doc, "■ Arm A", style = "Normal Indent" )
+doc <- body_add_flextable(doc, VS.SYSBP.a.1)
 doc <- body_add_break(doc)
+doc <- body_add_flextable(doc, VS.SYSBP.a.2)
+doc <- body_add_break(doc)
+
+doc <- body_add_par(doc, "■ Arm B", style = "Normal Indent" )
+doc <- body_add_flextable(doc, VS.SYSBP.b.1)
+doc <- body_add_break(doc)
+doc <- body_add_flextable(doc, VS.SYSBP.b.2)
+doc <- body_add_break(doc)
+
+doc <- body_add_par(doc, "■ Arm C", style = "Normal Indent" )
+doc <- body_add_flextable(doc, VS.SYSBP.c.1)
+doc <- body_add_break(doc)
+doc <- body_add_flextable(doc, VS.SYSBP.c.2)
+doc <- body_add_break(doc)
+
+doc <- body_add_par(doc, "■ 스크리닝 탈락자", style = "Normal Indent" )
+doc <- body_add_flextable(doc, VS.SYSBP.N)
+doc <- body_add_break(doc)
+
 
 doc <- body_add_par(doc, "16.4.6.2 활력징후[DBP]", style="heading 4")
-doc <- body_add_flextable(doc, VS0.BPSYS)
+
+doc <- body_add_par(doc, "■ Arm A", style = "Normal Indent" )
+doc <- body_add_flextable(doc, VS.BPSYS.a.1)
 doc <- body_add_break(doc)
+doc <- body_add_flextable(doc, VS.BPSYS.a.2)
+doc <- body_add_break(doc)
+
+doc <- body_add_par(doc, "■ Arm B", style = "Normal Indent" )
+doc <- body_add_flextable(doc, VS.BPSYS.b.1)
+doc <- body_add_break(doc)
+doc <- body_add_flextable(doc, VS.BPSYS.b.2)
+doc <- body_add_break(doc)
+
+doc <- body_add_par(doc, "■ Arm C", style = "Normal Indent" )
+doc <- body_add_flextable(doc, VS.BPSYS.c.1)
+doc <- body_add_break(doc)
+doc <- body_add_flextable(doc, VS.BPSYS.c.2)
+doc <- body_add_break(doc)
+
+doc <- body_add_par(doc, "■ 스크리닝 탈락자", style = "Normal Indent" )
+doc <- body_add_flextable(doc, VS.BPSYS.N)
+doc <- body_add_break(doc)
+
 
 doc <- body_add_par(doc, "16.4.6.3 활력징후[PULSE]", style="heading 4")
-doc <- body_add_flextable(doc, VS0.PL)
+
+doc <- body_add_par(doc, "■ Arm A", style = "Normal Indent" )
+doc <- body_add_flextable(doc, VS.PL.a.1)
+doc <- body_add_break(doc)
+doc <- body_add_flextable(doc, VS.PL.a.2)
 doc <- body_add_break(doc)
 
-doc <- body_add_par(doc, "16.4.6.4 활력징후[BODY TEMPERATURE]", style="heading 4")
-doc <- body_add_flextable(doc, VS0.TEMP)
+doc <- body_add_par(doc, "■ Arm B", style = "Normal Indent" )
+doc <- body_add_flextable(doc, VS.PL.b.1)
 doc <- body_add_break(doc)
+doc <- body_add_flextable(doc, VS.PL.b.2)
+doc <- body_add_break(doc)
+
+doc <- body_add_par(doc, "■ Arm C", style = "Normal Indent" )
+doc <- body_add_flextable(doc, VS.PL.c.1)
+doc <- body_add_break(doc)
+doc <- body_add_flextable(doc, VS.PL.c.2)
+doc <- body_add_break(doc)
+
+doc <- body_add_par(doc, "■ 스크리닝 탈락자", style = "Normal Indent" )
+doc <- body_add_flextable(doc, VS.PL.N)
+doc <- body_add_break(doc)
+
+
+doc <- body_add_par(doc, "16.4.6.4 활력징후[BODY TEMPERATURE]", style="heading 4")
+
+doc <- body_add_par(doc, "■ Arm A", style = "Normal Indent" )
+doc <- body_add_flextable(doc, VS.TEMP.a.1)
+doc <- body_add_break(doc)
+doc <- body_add_flextable(doc, VS.TEMP.a.2)
+doc <- body_add_break(doc)
+
+doc <- body_add_par(doc, "■ Arm B", style = "Normal Indent" )
+doc <- body_add_flextable(doc, VS.TEMP.b.1)
+doc <- body_add_break(doc)
+doc <- body_add_flextable(doc, VS.TEMP.b.2)
+doc <- body_add_break(doc)
+
+doc <- body_add_par(doc, "■ Arm C", style = "Normal Indent" )
+doc <- body_add_flextable(doc, VS.TEMP.c.1)
+doc <- body_add_break(doc)
+doc <- body_add_flextable(doc, VS.TEMP.c.2)
+doc <- body_add_break(doc)
+
+doc <- body_add_par(doc, "■ 스크리닝 탈락자", style = "Normal Indent" )
+doc <- body_add_flextable(doc, VS.TEMP.N)
+doc <- body_add_break(doc)
+
 doc <- body_end_section_landscape(doc) #끝
 
 doc <- body_add_par(doc, "12-Lead 심전도", style = "heading 3") # 16.4.7
 doc <- body_add_par(doc, "16.4.7.1 12-Lead 심전도[Ventricular rate]", style = "heading 4") 
-doc <- body_add_flextable(doc, EGVR)
+
+doc <- body_add_par(doc, "■ Arm A", style = "Normal Indent" )
+doc <- body_add_flextable(doc, EGVR.a)
+doc <- body_add_break(doc)
+
+doc <- body_add_par(doc, "■ Arm B", style = "Normal Indent" )
+doc <- body_add_flextable(doc, EGVR.b)
+doc <- body_add_break(doc)
+
+doc <- body_add_par(doc, "■ Arm C", style = "Normal Indent" )
+doc <- body_add_flextable(doc, EGVR.c)
+doc <- body_add_break(doc)
+
+doc <- body_add_par(doc, "■ 스크리닝 탈락자", style = "Normal Indent" )
+doc <- body_add_flextable(doc, EGVR.N)
 doc <- body_add_break(doc)
 
 doc <- body_add_par(doc, "16.4.7.2 12-Lead 심전도[PR Interval]", style = "heading 4") 
-doc <- body_add_flextable(doc, EGPR)
+
+doc <- body_add_par(doc, "■ Arm A", style = "Normal Indent" )
+doc <- body_add_flextable(doc, EGPR.a)
+doc <- body_add_break(doc)
+
+doc <- body_add_par(doc, "■ Arm B", style = "Normal Indent" )
+doc <- body_add_flextable(doc, EGPR.b)
+doc <- body_add_break(doc)
+
+doc <- body_add_par(doc, "■ Arm C", style = "Normal Indent" )
+doc <- body_add_flextable(doc, EGPR.c)
+doc <- body_add_break(doc)
+
+doc <- body_add_par(doc, "■ 스크리닝 탈락자", style = "Normal Indent" )
+doc <- body_add_flextable(doc, EGPR.N)
 doc <- body_add_break(doc)
 
 doc <- body_add_par(doc, "16.4.7.3 12-Lead 심전도[QRSD Interval]", style = "heading 4") 
-doc <- body_add_flextable(doc, EGQRSD)
+
+doc <- body_add_par(doc, "■ Arm A", style = "Normal Indent" )
+doc <- body_add_flextable(doc, EGQRSD.a)
 doc <- body_add_break(doc)
+
+doc <- body_add_par(doc, "■ Arm B", style = "Normal Indent" )
+doc <- body_add_flextable(doc, EGQRSD.b)
+doc <- body_add_break(doc)
+
+doc <- body_add_par(doc, "■ Arm C", style = "Normal Indent" )
+doc <- body_add_flextable(doc, EGQRSD.c)
+doc <- body_add_break(doc)
+
+doc <- body_add_par(doc, "■ 스크리닝 탈락자", style = "Normal Indent" )
+doc <- body_add_flextable(doc, EGQRSD.N)
+doc <- body_add_break(doc)
+
 
 doc <- body_add_par(doc, "16.4.7.4 12-Lead 심전도[QT Interval]", style = "heading 4") 
-doc <- body_add_flextable(doc, EGQT)
+
+doc <- body_add_par(doc, "■ Arm A", style = "Normal Indent" )
+doc <- body_add_flextable(doc, EGQT.a)
 doc <- body_add_break(doc)
+
+doc <- body_add_par(doc, "■ Arm B", style = "Normal Indent" )
+doc <- body_add_flextable(doc, EGQT.b)
+doc <- body_add_break(doc)
+
+doc <- body_add_par(doc, "■ Arm C", style = "Normal Indent" )
+doc <- body_add_flextable(doc, EGQT.c)
+doc <- body_add_break(doc)
+
+doc <- body_add_par(doc, "■ 스크리닝 탈락자", style = "Normal Indent" )
+doc <- body_add_flextable(doc, EGQT.N)
+doc <- body_add_break(doc)
+
 
 doc <- body_add_par(doc, "16.4.7.5 12-Lead 심전도[QTc Interval]", style = "heading 4") 
-doc <- body_add_flextable(doc, EGQTC)
+
+doc <- body_add_par(doc, "■ Arm A", style = "Normal Indent" )
+doc <- body_add_flextable(doc, EGQTC.a)
 doc <- body_add_break(doc)
+
+doc <- body_add_par(doc, "■ Arm B", style = "Normal Indent" )
+doc <- body_add_flextable(doc, EGQTC.b)
+doc <- body_add_break(doc)
+
+doc <- body_add_par(doc, "■ Arm C", style = "Normal Indent" )
+doc <- body_add_flextable(doc, EGQTC.c)
+doc <- body_add_break(doc)
+
+doc <- body_add_par(doc, "■ 스크리닝 탈락자", style = "Normal Indent" )
+doc <- body_add_flextable(doc, EGQTC.N)
+doc <- body_add_break(doc)
+
 
 doc <- body_add_par(doc, "16.4.7.6 12-Lead 심전도[Over all]", style = "heading 4") 
-doc <- body_add_flextable(doc, ECGNORM)
+
+doc <- body_add_par(doc, "■ Arm A", style = "Normal Indent" )
+doc <- body_add_flextable(doc, ECGNORM.a)
 doc <- body_add_break(doc)
 
-doc <- body_add_par(doc, "안과검사", style = "heading 3") # 16.4.8.1
-doc <- body_add_par(doc, "16.4.8.1 시력검사(OD)", style = "heading 4") 
-doc <- body_add_flextable(doc, MyFTable_16.4.8.1)
+doc <- body_add_par(doc, "■ Arm B", style = "Normal Indent" )
+doc <- body_add_flextable(doc, ECGNORM.b)
 doc <- body_add_break(doc)
 
-doc <- body_add_par(doc, "16.4.8.2 시력검사(OS)", style = "heading 4") 
-doc <- body_add_flextable(doc, MyFTable_16.4.8.2)
+doc <- body_add_par(doc, "■ Arm C", style = "Normal Indent" )
+doc <- body_add_flextable(doc, ECGNORM.c)
 doc <- body_add_break(doc)
 
-doc <- body_end_section_continuous(doc) # 가로 시작
-
-doc <- body_add_par(doc, "16.4.8.3 안압검사(OD)", style = "heading 4") 
-doc <- body_add_flextable(doc, MyFTable_16.4.8.3)
+doc <- body_add_par(doc, "■ 스크리닝 탈락자", style = "Normal Indent" )
+doc <- body_add_flextable(doc, ECGNORM.N)
 doc <- body_add_break(doc)
 
-doc <- body_add_par(doc, "16.4.8.4 안압검사(OS)", style = "heading 4") 
-doc <- body_add_flextable(doc, MyFTable_16.4.8.4)
+
+doc <- body_add_par(doc, "혈당검사", style = "heading 3") # 16.4.8.1
+doc <- body_add_par(doc, "16.4.8.1 혈당검사", style = "heading 4") 
+
+doc <- body_add_par(doc, "■ Arm A", style = "Normal Indent" )
+doc <- body_add_flextable(doc, BST.a)
 doc <- body_add_break(doc)
 
-doc <- body_end_section_landscape(doc) #가로 끝
-
-doc <- body_add_par(doc, "16.4.8.5 눈물막 파괴 시간(OD)", style = "heading 4") 
-doc <- body_add_flextable(doc, MyFTable_16.4.8.5)
+doc <- body_add_par(doc, "■ Arm B", style = "Normal Indent" )
+doc <- body_add_flextable(doc, BST.b)
 doc <- body_add_break(doc)
 
-doc <- body_add_par(doc, "16.4.8.6 눈물막 파괴 시간(OS)", style = "heading 4") 
-doc <- body_add_flextable(doc, MyFTable_16.4.8.6)
+doc <- body_add_par(doc, "■ Arm C", style = "Normal Indent" )
+doc <- body_add_flextable(doc, BST.c)
 doc <- body_add_break(doc)
 
-doc <- body_add_par(doc, "16.4.8.7 쉬르머 검사(OD)", style = "heading 4") 
-doc <- body_add_flextable(doc, MyFTable_16.4.8.7)
-doc <- body_add_break(doc)
 
-doc <- body_add_par(doc, "16.4.8.8 쉬르머 검사(OS)", style = "heading 4") 
-doc <- body_add_flextable(doc, MyFTable_16.4.8.8)
-doc <- body_add_break(doc)
-
-doc <- body_add_par(doc, "16.4.8.9 세극등 검사(OD)", style = "heading 4") 
-doc <- body_add_flextable(doc, MyFTable_16.4.8.9)
-doc <- body_add_break(doc)
-
-doc <- body_add_par(doc, "16.4.8.10 세극등 검사(OS)", style = "heading 4") 
-doc <- body_add_flextable(doc, MyFTable_16.4.8.10)
-doc <- body_add_break(doc)
 
 
 appendix.name <- strsplit(getwd(), "/")[[1]][6]
-print(doc, target = paste0(dirname(getwd()), "/", appendix.name, "/",appendix.name,"_Appendix_Test.docx"))
+print(doc, target = paste0(dirname(getwd()), "/", appendix.name, "/",appendix.name,"_Appendix_2022.11.17.docx"))
