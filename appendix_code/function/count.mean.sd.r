@@ -40,7 +40,7 @@ count.mean.sd.fun <- function(data) {
         all.list[[j]][all.list[[j]] == -Inf] <- "-"
         all.list[[j]][is.na(all.list[[j]])] <- "-"
         all.list[[j]][is.nan(all.list[[j]])] <- "-"
-        all.list[[j]][all.list[[j]] == NaN] <- "-"
+        all.list[[j]][all.list[[j]] == NaN] <- "-" #updated 22.10.04.
     }
     return(list(list_ = all.list, names_ = all.names))
 }
