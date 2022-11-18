@@ -1,3 +1,4 @@
+library(ggplot2)
 library(tidyverse)
 library(readxl)
 library(zoo)
@@ -19,7 +20,7 @@ set_gtsummary_theme(my_theme)
 theme_gtsummary_compact()
 
 
-setwd("~/DTPK-CS-22-018")
+setwd("C:/Users/cmc/Documents/GitHub/DTPK-CS-22-018")
 
 ## Dapa prep
 datad <- read_excel('Data/PK/Dapagliflozin.xlsx', sheet = 5, skip = 1)
@@ -34,10 +35,24 @@ dapa <- datad %>%
   as.data.frame()
 
 
+head(dapa)
+
+dapa %>%
+  mutate(Conc = ifelse(Time == 0, 0, Conc)) %>%
+  group_by(Period, Time) %>%
+  summarise(mean = mean(Conc, na.rm = T), sd = sd(Conc, na.rm = T)) %>%
+  ungroup() %>%
+  ggplot() +
+  geom_line(aes(x = Time, y = mean, col = Period)) +
+  geom_point(aes(x = Time, y = mean, col = Period)) + 
+  geom_errorbar(aes(x = Time, ymax = mean + sd, ymin = mean, col = Period)) +
+  theme_bw() +
+  labs(y = "Plasma concentration of dapagliflozin(ng/mL)")
 
 
 
-# DB 수령 후 Real-time 적용 예정
+
+# Real-time 적용
 db <- list.files('Data/DB', pattern = "xlsx", full.names = T)
 
 db_rn <- read_excel(db, sheet = "RN")
