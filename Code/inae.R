@@ -1,3 +1,4 @@
+library(ggplot2)
 library(tidyverse)
 library(readxl)
 library(zoo)
@@ -19,7 +20,7 @@ set_gtsummary_theme(my_theme)
 theme_gtsummary_compact()
 
 
-setwd("~/DTPK-CS-22-018")
+setwd("C:/Users/cmc/Documents/GitHub/DTPK-CS-22-018")
 
 ## Dapa prep
 datad <- read_excel('Data/PK/Dapagliflozin.xlsx', sheet = 5, skip = 1)
@@ -33,11 +34,26 @@ dapa <- datad %>%
   filter(ID %ni% c("B140", "B070")) %>%
   as.data.frame()
 
+#plot 생성
+
+head(dapa)
+
+dapa %>%
+  mutate(Conc = ifelse(Time == 0, 0, Conc)) %>%
+  group_by(Period, Time) %>%
+  summarise(mean = mean(Conc, na.rm = T), sd = sd(Conc, na.rm = T)) %>%
+  ungroup() %>%
+  ggplot() +
+  geom_line(aes(x = Time, y = mean, col = Period)) +
+  geom_point(aes(x = Time, y = mean, col = Period)) + 
+  geom_errorbar(aes(x = Time, ymax = mean + sd, ymin = mean, col = Period)) +
+  theme_bw() +
+  labs(y = "Plasma concentration of dapagliflozin(ng/mL)")
 
 
 
 
-# DB 수령 후 Real-time 적용 예정
+# Real-time 적용
 db <- list.files('Data/DB', pattern = "xlsx", full.names = T)
 
 db_rn <- read_excel(db, sheet = "RN")
@@ -121,11 +137,23 @@ metb <- datamb %>%
   filter(ID %ni% c("B140", "B070")) %>%
   as.data.frame()
 
+#plot 생성
+head(metb)
+
+metb %>%
+  mutate(Conc = ifelse(Time == 0, 0, Conc)) %>%
+  group_by(Period, Time) %>%
+  summarise(mean = mean(Conc, na.rm = T), sd = sd(Conc, na.rm = T)) %>%
+  ungroup() %>%
+  ggplot() +
+  geom_line(aes(x = Time, y = mean, col = Period)) +
+  geom_point(aes(x = Time, y = mean, col = Period)) + 
+  geom_errorbar(aes(x = Time, ymax = mean + sd, ymin = mean, col = Period)) +
+  theme_bw() +
+  labs(y = "Plasma concentration of Metformin (Cohort B)(ng/mL)")
 
 
-
-
-# DB 수령 후 Real-time 적용 예정
+# Real-time 적용
 
 view(metb)
 
@@ -208,7 +236,26 @@ metc <- datamc %>%
   filter(ID %ni% c("C040", "C190", "C230")) %>%
   as.data.frame()
 
-# DB 수령 후 Real-time 적용 예정
+
+#plot 생성
+
+
+head(metc)
+
+metc %>%
+  mutate(Conc = ifelse(Time == 0, 0, Conc)) %>%
+  group_by(Period, Time) %>%
+  summarise(mean = mean(Conc, na.rm = T), sd = sd(Conc, na.rm = T)) %>%
+  ungroup() %>%
+  ggplot() +
+  geom_line(aes(x = Time, y = mean, col = Period)) +
+  geom_point(aes(x = Time, y = mean, col = Period)) + 
+  geom_errorbar(aes(x = Time, ymax = mean + sd, ymin = mean, col = Period)) +
+  theme_bw() +
+  labs(y = "Plasma concentration of Metformin (Cohort c)(ng/mL)")
+
+
+# Real-time 적용
 
 view(metc)
 
@@ -294,7 +341,26 @@ valsaa <- datava %>%
   filter(ID %ni% c("A030", "A120", "A210")) %>%
   as.data.frame()
 
-# DB 수령 후 Real-time 적용 예정
+
+
+#plot 생성
+
+head(valsaa)
+
+valsaa %>%
+  mutate(Conc = ifelse(Time == 0, 0, Conc)) %>%
+  group_by(Period, Time) %>%
+  summarise(mean = mean(Conc, na.rm = T), sd = sd(Conc, na.rm = T)) %>%
+  ungroup() %>%
+  ggplot() +
+  geom_line(aes(x = Time, y = mean, col = Period)) +
+  geom_point(aes(x = Time, y = mean, col = Period)) + 
+  geom_errorbar(aes(x = Time, ymax = mean + sd, ymin = mean, col = Period)) +
+  theme_bw() +
+  labs(y = "Plasma concentration of Valsartan (Cohort a)(ng/mL)")
+
+
+#  Real-time 적용 
 
 view(valsaa)
 
@@ -372,7 +438,23 @@ valsac <- datavc %>%
   filter(ID %ni% c("C040", "C190", "C230")) %>%
   as.data.frame()
 
-# DB 수령 후 Real-time 적용 예정
+#plot 생성
+
+head(valsac)
+
+valsac %>%
+  mutate(Conc = ifelse(Time == 0, 0, Conc)) %>%
+  group_by(Period, Time) %>%
+  summarise(mean = mean(Conc, na.rm = T), sd = sd(Conc, na.rm = T)) %>%
+  ungroup() %>%
+  ggplot() +
+  geom_line(aes(x = Time, y = mean, col = Period)) +
+  geom_point(aes(x = Time, y = mean, col = Period)) + 
+  geom_errorbar(aes(x = Time, ymax = mean + sd, ymin = mean, col = Period)) +
+  theme_bw() +
+  labs(y = "Plasma concentration of Valsartan (Cohort C)(ng/mL)")
+
+# Real-time 
 
 view(valsac)
 
