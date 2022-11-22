@@ -20,7 +20,7 @@ set_gtsummary_theme(my_theme)
 theme_gtsummary_compact()
 
 
-setwd("C:/Users/cmc/Documents/GitHub/DTPK-CS-22-018")
+setwd("C:/Users/user/Documents/DTPK-CS-22-018")
 
 ## Dapa prep
 datad <- read_excel('Data/PK/Dapagliflozin.xlsx', sheet = 5, skip = 1)
