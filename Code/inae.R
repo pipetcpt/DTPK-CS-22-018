@@ -1,3 +1,4 @@
+library('psych')
 library(ggplot2)
 library(tidyverse)
 library(readxl)
@@ -20,7 +21,7 @@ set_gtsummary_theme(my_theme)
 theme_gtsummary_compact()
 
 
-setwd("C:/Users/user/Documents/DTPK-CS-22-018")
+
 
 ## Dapa prep
 datad <- read_excel('Data/PK/Dapagliflozin.xlsx', sheet = 5, skip = 1)
@@ -90,6 +91,36 @@ dapa_NCA %>%
               type = TMAX ~ "continuous", 
               statistic = c("TMAX") ~ "{median} ({min}- {max})")
 
+
+## geometric.mean
+dapageo <- dapa_NCA %>%
+  group_by(Period) %>%
+  summarise_at(vars(CMAX, TMAX, LAMZHL, AUCLST, AUCIFO, VZFO), geometric.mean, na.rm = TRUE) %>%
+  mutate_at(vars(-Period), round, 2)%>%
+  as.data.frame()
+
+write.csv(dapageo, 'dapageo.csv', row.names = F, fileEncoding = 'cp949')
+
+
+
+#도저히 모르겠당...CV 구하기!!!!!!!!
+# sd(dapa_NCA$CMAX) / mean(dapa_NCA%CMAX) * 100
+### 일단 1기와 2기를 나눠보자..
+dapa_group1 <- dapa_NCA %>%
+  filter(Period %in% "1기")
+
+dapa_group2 <- dapa_NCA %>%
+  filter(Period %in% "2기")
+
+#CMAX_CV구하기
+dapacv1 <- sd(group1$CMAX) / mean(group1$CMAX) * 100
+dapacv2 <- sd(group2$CMAX) / mean(group2$CMAX) * 100
+
+
+
+
+
+
 ## Comparative PK(CMAX)
 dapa_BE_raw <- dapa_NCA  %>%
   mutate(LCMAX = log(CMAX), LAUCLST = log(AUCLST))
@@ -102,6 +133,7 @@ cidc <- intervals(BEdc, 0.9)
 exp(cidc$fixed["Period2기", ])  %>% round(4)  ## 90% CI result 
 
 GLM(fc, dapa_BE_raw)$ANOVA     ## Anova result
+
 
 
 
