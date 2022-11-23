@@ -21,7 +21,7 @@ set_gtsummary_theme(my_theme)
 theme_gtsummary_compact()
 
 
-
+setwd("~/GitHub/DTPK-CS-22-018")
 
 ## Dapa prep
 datad <- read_excel('Data/PK/Dapagliflozin.xlsx', sheet = 5, skip = 1)
@@ -92,35 +92,33 @@ dapa_NCA %>%
               statistic = c("TMAX") ~ "{median} ({min}- {max})")
 
 
+#CV 계산 식에 geomean 구하도록 작성해서 이 부분은 필요없음
 ## geometric.mean
-dapageo <- dapa_NCA %>%
-  group_by(Period) %>%
-  summarise_at(vars(CMAX, TMAX, LAMZHL, AUCLST, AUCIFO, VZFO), geometric.mean, na.rm = TRUE) %>%
-  mutate_at(vars(-Period), round, 2)%>%
-  as.data.frame()
+##dapageo <- dapa_NCA %>%
+##  group_by(Period) %>%
+##  summarise_at(vars(CMAX, TMAX, LAMZHL, AUCLST, AUCIFO, VZFO), geometric.mean, na.rm = TRUE) %>%
+##  mutate_at(vars(-Period), round, 2)%>%
+##  as.data.frame()
 
-write.csv(dapageo, 'dapageo.csv', row.names = F, fileEncoding = 'cp949')
+## write.csv(dapageo, 'dapageo.csv', row.names = F, fileEncoding = 'cp949')
 
 
 
-## CV 계산!!
+## geometric.mean & CV 계산!!
 
 dapa_pktable <- dapa_NCA %>% 
   gather(param, value,CMAX:VZFO) %>% 
   na.omit() %>% #결측치제거
   group_by(Period, param) %>% 
-  summarise_at(vars(value), lst(mean, sd, median, min, max)) %>% 
+  summarise_at(vars(value), lst(mean, sd, median, min, max, geoMean)) %>% 
   ungroup() %>% 
   mutate_at(-(1:2), round, 2) %>% 
 
-  select(1:2, mean, sd, Median=median, Min=min, Max=max) %>% 
+  select(1:2, mean, sd, Median=median, Min=min, Max=max, geomean= geoMean) %>% 
   mutate(CV=round(sd/mean*100,2)) %>%
   mutate(param = factor(param, levels = c("CMAX","TMAX","LAMZHL","AUCLST","AUCIFO","CLFO","VZFO"))) %>%
   arrange(Period,param)
-
-#pktable[,2]<-pktable[,2]%>%factor(levels = c('CMAX','TMAX','LAMZHL','AUCLST','AUCIFO','CLFO','VZFO'))
-#CV(mean, sd)
-
+write.csv(dapa_pktable, 'dapaNCA.csv', row.names = F, fileEncoding = 'cp949')
 
 
 
@@ -221,19 +219,20 @@ metb_NCA %>%
               type = TMAX ~ "continuous", 
               statistic = c("TMAX") ~ "{median} ({min}- {max})")
 
-# CV 구하기!!
+# Geometric.mean & CV 구하기!!
 metb_pktable <- metb_NCA %>% 
   gather(param, value,CMAX:VZFO) %>% 
   na.omit() %>% #결측치제거
   group_by(Period, param) %>% 
-  summarise_at(vars(value), lst(mean, sd, median, min, max)) %>% 
+  summarise_at(vars(value), lst(mean, sd, median, min, max, geoMean)) %>% 
   ungroup() %>% 
   mutate_at(-(1:2), round, 2) %>% 
   
-  select(1:2, mean, sd, Median=median, Min=min, Max=max) %>% 
+  select(1:2, mean, sd, Median=median, Min=min, Max=max, geomean= geoMean) %>% 
   mutate(CV=round(sd/mean*100,2)) %>%
   mutate(param = factor(param, levels = c("CMAX","TMAX","LAMZHL","AUCLST","AUCIFO","CLFO","VZFO"))) %>%
   arrange(Period,param)
+write.csv(metb_pktable, 'metb_NCA.csv', row.names = F, fileEncoding = 'cp949')
 
 
 
@@ -343,19 +342,21 @@ metc_NCA %>%
 
 
 
-# CV 구하기!!
+# Geometric.mean & CV 구하기!!
 metc_pktable <- metc_NCA %>% 
   gather(param, value,CMAX:VZFO) %>% 
   na.omit() %>% #결측치제거
   group_by(Period, param) %>% 
-  summarise_at(vars(value), lst(mean, sd, median, min, max)) %>% 
+  summarise_at(vars(value), lst(mean, sd, median, min, max, geoMean)) %>% 
   ungroup() %>% 
   mutate_at(-(1:2), round, 2) %>% 
   
-  select(1:2, mean, sd, Median=median, Min=min, Max=max) %>% 
+  select(1:2, mean, sd, Median=median, Min=min, Max=max, geomean= geoMean) %>% 
   mutate(CV=round(sd/mean*100,2)) %>%
   mutate(param = factor(param, levels = c("CMAX","TMAX","LAMZHL","AUCLST","AUCIFO","CLFO","VZFO"))) %>%
   arrange(Period,param)
+
+write.csv(metc_pktable, 'metc_NCA.csv', row.names = F, fileEncoding = 'cp949')
 
 
 
@@ -466,20 +467,20 @@ valsaa_NCA %>%
 
 
 
-# CV 구하기!!
+# Geometric.mean & CV 구하기!!
 valsaa_pktable <- valsaa_NCA %>% 
   gather(param, value,CMAX:VZFO) %>% 
   na.omit() %>% #결측치제거
   group_by(Period, param) %>% 
-  summarise_at(vars(value), lst(mean, sd, median, min, max)) %>% 
+  summarise_at(vars(value), lst(mean, sd, median, min, max, geoMean)) %>% 
   ungroup() %>% 
   mutate_at(-(1:2), round, 2) %>% 
   
-  select(1:2, mean, sd, Median=median, Min=min, Max=max) %>% 
+  select(1:2, mean, sd, Median=median, Min=min, Max=max, geomean= geoMean) %>% 
   mutate(CV=round(sd/mean*100,2)) %>%
   mutate(param = factor(param, levels = c("CMAX","TMAX","LAMZHL","AUCLST","AUCIFO","CLFO","VZFO"))) %>%
   arrange(Period,param)
-
+write.csv(valsaa_pktable, 'valsaa_NCA.csv', row.names = F, fileEncoding = 'cp949')
 
 
 ## Comparative PK(CMAX)
@@ -578,19 +579,20 @@ valsac_NCA %>%
 
 
 
-# CV 구하기!!
+# Geometric.mean & CV 구하기!!
 valsac_pktable <- valsac_NCA %>% 
   gather(param, value,CMAX:VZFO) %>% 
   na.omit() %>% #결측치제거
   group_by(Period, param) %>% 
-  summarise_at(vars(value), lst(mean, sd, median, min, max)) %>% 
+  summarise_at(vars(value), lst(mean, sd, median, min, max, geoMean)) %>% 
   ungroup() %>% 
   mutate_at(-(1:2), round, 2) %>% 
   
-  select(1:2, mean, sd, Median=median, Min=min, Max=max) %>% 
+  select(1:2, mean, sd, Median=median, Min=min, Max=max, geomean= geoMean) %>% 
   mutate(CV=round(sd/mean*100,2)) %>%
   mutate(param = factor(param, levels = c("CMAX","TMAX","LAMZHL","AUCLST","AUCIFO","CLFO","VZFO"))) %>%
   arrange(Period,param)
+write.csv(valsac_pktable, 'valsac_NCA.csv', row.names = F, fileEncoding = 'cp949')
 
 
 ## Comparative PK(CMAX)
