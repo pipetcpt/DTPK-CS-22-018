@@ -49,10 +49,18 @@ dapa %>%
   geom_point(aes(x = Time, y = mean, col = Period)) + 
   geom_errorbar(aes(x = Time, ymax = mean + sd, ymin = mean, col = Period)) +
   theme_bw() +
-  labs(y = "Plasma concentration of dapagliflozin(ng/mL)")
+  labs(y = "Plasma concentration of dapagliflozin(ng/mL)", x = "Time(hr)")
 
 
-
+dapa %>%
+  mutate(Conc = ifelse(Time == 0, 0, Conc)) %>%
+  ggplot(aes(x = Time, y = Conc, col = Period)) + 
+  geom_line () +
+  geom_point() + 
+  facet_wrap(vars(ID)) +
+  theme_bw() +
+  labs(y = "Plasma concentration of dapagliflozin(ng/mL)", x = "Time(hr)")
+ 
 
 # Real-time 적용
 db <- list.files('Data/DB', pattern = "xlsx", full.names = T)
@@ -60,10 +68,6 @@ db <- list.files('Data/DB', pattern = "xlsx", full.names = T)
 db_rn <- read_excel(db, sheet = "RN")
 db_pk <- read_excel(db, sheet = "PB")
 
-db_rn
-
-
-view(dapa)
 
 db_pk_tidy <- db_pk %>%
   mutate(PBDETM = ifelse(SEQ == 1, 0, PBDETM), PBDETM = as.numeric(PBDETM)) %>%
@@ -113,13 +117,11 @@ dapa_pktable <- dapa_NCA %>%
   summarise_at(vars(value), lst(mean, sd, median, min, max, geoMean)) %>% 
   ungroup() %>% 
   mutate_at(-(1:2), round, 2) %>% 
-
   select(1:2, mean, sd, Median=median, Min=min, Max=max, geomean= geoMean) %>% 
   mutate(CV=round(sd/mean*100,2)) %>%
   mutate(param = factor(param, levels = c("CMAX","TMAX","LAMZHL","AUCLST","AUCIFO","CLFO","VZFO"))) %>%
   arrange(Period,param)
 #write.csv(dapa_pktable, 'dapaNCA.csv', row.names = F, fileEncoding = 'cp949')
-
 
 
 ## Comparative PK(CMAX)
@@ -138,7 +140,6 @@ GLM(fc, dapa_BE_raw)$ANOVA     ## Anova result
 
 
 
-
 ## Comparative PK(AUCLST)
 dapa_BE_raw <- dapa_NCA  %>%
   mutate(LCMAX = log(CMAX), LAUCLST = log(AUCLST))
@@ -150,7 +151,6 @@ cida <- intervals(BEda, 0.9)
 exp(cida$fixed["Period2기", ])  %>% round(4)   ## 90% CI result 
 
 GLM(fa, dapa_BE_raw)$ANOVA     ## Anova result
-
 
 
 
@@ -185,7 +185,7 @@ metb %>%
   geom_point(aes(x = Time, y = mean, col = Period)) + 
   geom_errorbar(aes(x = Time, ymax = mean + sd, ymin = mean, col = Period)) +
   theme_bw() +
-  labs(y = "Plasma concentration of Metformin (Cohort B)(ng/mL)")
+  labs(y = "Plasma concentration of Metformin(Cohort B) (ng/mL)")
 
 
 # Real-time 적용
@@ -236,7 +236,7 @@ metb_pktable <- metb_NCA %>%
   arrange(Period,param)
 #write.csv(metb_pktable, 'metb_NCA.csv', row.names = F, fileEncoding = 'cp949')
 
-
+metb_pktable
 
 
 
