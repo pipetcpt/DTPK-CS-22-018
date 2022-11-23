@@ -118,7 +118,7 @@ dapa_pktable <- dapa_NCA %>%
   mutate(CV=round(sd/mean*100,2)) %>%
   mutate(param = factor(param, levels = c("CMAX","TMAX","LAMZHL","AUCLST","AUCIFO","CLFO","VZFO"))) %>%
   arrange(Period,param)
-write.csv(dapa_pktable, 'dapaNCA.csv', row.names = F, fileEncoding = 'cp949')
+#write.csv(dapa_pktable, 'dapaNCA.csv', row.names = F, fileEncoding = 'cp949')
 
 
 
@@ -157,6 +157,8 @@ GLM(fa, dapa_BE_raw)$ANOVA     ## Anova result
 
 
 
+
+#____________________________________________________________
 
 ## Metformin prep(Cohort B)
 datamb <- read_excel('Data/PK/metformin.xlsx', sheet = 5, skip = 1)
@@ -232,7 +234,7 @@ metb_pktable <- metb_NCA %>%
   mutate(CV=round(sd/mean*100,2)) %>%
   mutate(param = factor(param, levels = c("CMAX","TMAX","LAMZHL","AUCLST","AUCIFO","CLFO","VZFO"))) %>%
   arrange(Period,param)
-write.csv(metb_pktable, 'metb_NCA.csv', row.names = F, fileEncoding = 'cp949')
+#write.csv(metb_pktable, 'metb_NCA.csv', row.names = F, fileEncoding = 'cp949')
 
 
 
@@ -277,7 +279,7 @@ GLM(fmba, metb_BE_raw)$ANOVA     ## Anova result
 
 
 
-
+#____________________________________________________________
 
 ## Metformin prep(Cohort C)
 datamc <- read_excel('Data/PK/Metformin.xlsx', sheet = 6, skip = 1)
@@ -356,7 +358,7 @@ metc_pktable <- metc_NCA %>%
   mutate(param = factor(param, levels = c("CMAX","TMAX","LAMZHL","AUCLST","AUCIFO","CLFO","VZFO"))) %>%
   arrange(Period,param)
 
-write.csv(metc_pktable, 'metc_NCA.csv', row.names = F, fileEncoding = 'cp949')
+#write.csv(metc_pktable, 'metc_NCA.csv', row.names = F, fileEncoding = 'cp949')
 
 
 
@@ -398,11 +400,7 @@ GLM(fmca, metc_BE_raw)$ANOVA     ## Anova result
 
 
 
-
-
-
-
-
+#____________________________________________________________
 
 ## Valsartan prep(Cohort A)
 datava <- read_excel('Data/PK/Valsartan.xlsx', sheet = 5, skip = 1)
@@ -480,7 +478,7 @@ valsaa_pktable <- valsaa_NCA %>%
   mutate(CV=round(sd/mean*100,2)) %>%
   mutate(param = factor(param, levels = c("CMAX","TMAX","LAMZHL","AUCLST","AUCIFO","CLFO","VZFO"))) %>%
   arrange(Period,param)
-write.csv(valsaa_pktable, 'valsaa_NCA.csv', row.names = F, fileEncoding = 'cp949')
+#write.csv(valsaa_pktable, 'valsaa_NCA.csv', row.names = F, fileEncoding = 'cp949')
 
 
 ## Comparative PK(CMAX)
@@ -515,9 +513,7 @@ GLM(fvaa, valsaa_BE_raw)$ANOVA     ## Anova result
 
 
 
-
-
-
+#____________________________________________________________
 
 ## Valsartan prep(Cohort C)
 datavc <- read_excel('Data/PK/Valsartan.xlsx', sheet = 6, skip = 1)
@@ -592,7 +588,7 @@ valsac_pktable <- valsac_NCA %>%
   mutate(CV=round(sd/mean*100,2)) %>%
   mutate(param = factor(param, levels = c("CMAX","TMAX","LAMZHL","AUCLST","AUCIFO","CLFO","VZFO"))) %>%
   arrange(Period,param)
-write.csv(valsac_pktable, 'valsac_NCA.csv', row.names = F, fileEncoding = 'cp949')
+#write.csv(valsac_pktable, 'valsac_NCA.csv', row.names = F, fileEncoding = 'cp949')
 
 
 ## Comparative PK(CMAX)
@@ -619,4 +615,8 @@ BEvca <- lme(fvca, random = ~1|ID, data = valsac_BE_raw)
 civca <- intervals(BEvca, 0.9)
 exp(civca$fixed["Period2기", ])  %>% round(4)   ## 90% CI result 
 
+# write.csv(valsa_c_auc, 'valsa_c_auc.csv', row.names = F, fileEncoding = 'cp949')
+
 GLM(fvca, valsac_BE_raw)$ANOVA     ## Anova result
+
+
