@@ -103,6 +103,34 @@ write.csv(dapageo, 'dapageo.csv', row.names = F, fileEncoding = 'cp949')
 
 
 
+## CV 계산!!
+
+pktable <- dapa_NCA %>% 
+ # select(1:2, "AUC~last~(hr*ng/mL)"=AUCLST, "C~max~(ng/mL)"=CMAX, 
+#         "T~max~(hr)"=TMAX, "t~1/2~(hr)"=LAMZHL, "CL/F(L/hr)"=CLFO, "V~d~/F(L)"=VZFO) %>% 
+  gather(param, value,CMAX:VZFO) %>% 
+  na.omit() %>% #결측치제거
+  group_by(Period, param) %>% 
+  summarise_at(vars(value), lst(mean, sd, median, min, max)) %>% 
+  ungroup() %>% 
+  mutate_at(-(1:2), round, 2) %>% 
+  # mutate("Mean±SD" = ifelse(param=="Tmax(hr)", 
+  #                       sprintf("%0.2f(%0.2f-%0.2f)", median, min, max),
+  #                       sprintf("%0.2f±%0.2f", mean, sd))) %>% 
+  select(1:2, mean, sd, Median=median, Min=min, Max=max) %>% 
+  mutate(CV=round(sd/mean*100,2)) %>%
+  mutate(param = factor(param, levels = c("CMAX","TMAX","LAMZHL","AUCLST","AUCIFO","CLFO","VZFO"))) %>%
+  arrange(Period,param)
+#  gather(stat, value, 3:7) %>% 
+#  unite(trtstat, trt, stat, sep="_") %>%
+#  mutate(trtstat=factor(trtstat, level=c("R_mean", "R_sd", "R_Median","R_Min","R_Max",
+#                                         "T_mean", "T_sd", "T_Median","T_Min","T_Max" ))) %>% 
+#  spread(trtstat, value) %>% 
+#  split(.$substance)
+
+pktable[,2]<-pktable[,2]%>%factor(levels = c('CMAX','TMAX','LAMZHL','AUCLST','AUCIFO','CLFO','VZFO'))
+
+CV(mean, sd)
 #도저히 모르겠당...CV 구하기!!!!!!!!
 # sd(dapa_NCA$CMAX) / mean(dapa_NCA%CMAX) * 100
 ### 일단 1기와 2기를 나눠보자..
@@ -113,9 +141,22 @@ dapa_group2 <- dapa_NCA %>%
   filter(Period %in% "2기")
 
 #CMAX_CV구하기
-dapacv1 <- sd(group1$CMAX) / mean(group1$CMAX) * 100
-dapacv2 <- sd(group2$CMAX) / mean(group2$CMAX) * 100
+dapacv1 <- sd(dapa_group1$CMAX) / mean(dapa_group1$CMAX) * 100
+dapacv2 <- sd(dapa_group2$CMAX) / mean(dapa_group2$CMAX) * 100
 
+# 아니면
+dapacmax1 <- CV(mean=mean(dapa_group1$CMAX), sd=sd(dapa_group1$CMAX))
+dapacmax2 <- CV(mean=mean(dapa_group2$CMAX), sd=sd(dapa_group2$CMAX))
+
+table4.1 <- dapa_NCA %>% 
+  group_by(Period) %>% 
+  summarise(N=n(), Mean=mean(conc), SD= sd(conc), Median=median(conc), Min=min(conc), Max=max(conc)) %>% 
+  ungroup() %>% 
+  mutate("CV(%)" = SD/Mean*100) %>% 
+  mutate_at(-(1:2), round, 2) %>% 
+  mutate_at(-(1:2), ~sprintf("%0.2f", .x)) %>% 
+  unite("Mean ± SD", Mean, SD, sep = " ± ") %>% 
+  select(1:6, 10, everything())
 
 
 
