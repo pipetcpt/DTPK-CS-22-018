@@ -35,8 +35,9 @@ dapa <- datad %>%
   filter(ID %ni% c("B140", "B070")) %>%
   as.data.frame()
 
-#plot 생성
 
+
+#plot 생성
 head(dapa)
 
 dapa %>%
@@ -51,7 +52,7 @@ dapa %>%
   theme_bw() +
   labs(y = "Plasma concentration of dapagliflozin(ng/mL)", x = "Time(hr)")
 
-
+# Appendix plot(개별 대상자)
 dapa %>%
   mutate(Conc = ifelse(Time == 0, 0, Conc)) %>%
   ggplot(aes(x = Time, y = Conc, col = Period)) + 
@@ -61,6 +62,7 @@ dapa %>%
   theme_bw() +
   labs(y = "Plasma concentration of dapagliflozin(ng/mL)", x = "Time(hr)")
  
+
 
 # Real-time 적용
 db <- list.files('Data/DB', pattern = "xlsx", full.names = T)
@@ -119,7 +121,7 @@ dapa_pktable <- dapa_NCA %>%
   mutate_at(-(1:2), round, 2) %>% 
   select(1:2, mean, sd, Median=median, Min=min, Max=max, geomean= geoMean) %>% 
   mutate(CV=round(sd/mean*100,2)) %>%
-  mutate(param = factor(param, levels = c("CMAX","TMAX","LAMZHL","AUCLST","AUCIFO","CLFO","VZFO"))) %>%
+  mutate(param = factor(param, levels = c("CMAX","AUCLST","AUCIFO","TMAX","LAMZHL", "CLFO","VZFO"))) %>%
   arrange(Period,param)
 #write.csv(dapa_pktable, 'dapaNCA.csv', row.names = F, fileEncoding = 'cp949')
 
@@ -185,7 +187,17 @@ metb %>%
   geom_point(aes(x = Time, y = mean, col = Period)) + 
   geom_errorbar(aes(x = Time, ymax = mean + sd, ymin = mean, col = Period)) +
   theme_bw() +
-  labs(y = "Plasma concentration of Metformin(Cohort B) (ng/mL)")
+  labs(y = "Plasma concentration of Metformin (ng/mL)")
+
+# Appendix plot(개별 대상자)
+metb %>%
+  mutate(Conc = ifelse(Time == 0, 0, Conc)) %>%
+  ggplot(aes(x = Time, y = Conc, col = Period)) + 
+  geom_line () +
+  geom_point() + 
+  facet_wrap(vars(ID)) +
+  theme_bw() +
+  labs(y = "Plasma concentration of Metformin(ng/mL)", x = "Time(hr)")
 
 
 # Real-time 적용
@@ -232,7 +244,7 @@ metb_pktable <- metb_NCA %>%
   
   select(1:2, mean, sd, Median=median, Min=min, Max=max, geomean= geoMean) %>% 
   mutate(CV=round(sd/mean*100,2)) %>%
-  mutate(param = factor(param, levels = c("CMAX","TMAX","LAMZHL","AUCLST","AUCIFO","CLFO","VZFO"))) %>%
+  mutate(param = factor(param, levels = c("CMAX","AUCLST","AUCIFO","TMAX","LAMZHL", "CLFO","VZFO"))) %>%
   arrange(Period,param)
 #write.csv(metb_pktable, 'metb_NCA.csv', row.names = F, fileEncoding = 'cp949')
 
@@ -295,8 +307,6 @@ metc <- datamc %>%
 
 
 #plot 생성
-
-
 head(metc)
 
 metc %>%
@@ -309,7 +319,17 @@ metc %>%
   geom_point(aes(x = Time, y = mean, col = Period)) + 
   geom_errorbar(aes(x = Time, ymax = mean + sd, ymin = mean, col = Period)) +
   theme_bw() +
-  labs(y = "Plasma concentration of Metformin (Cohort c)(ng/mL)")
+  labs(y = "Plasma concentration of Metformin (ng/mL)")
+
+# Appendix plot(개별 대상자)
+metc %>%
+  mutate(Conc = ifelse(Time == 0, 0, Conc)) %>%
+  ggplot(aes(x = Time, y = Conc, col = Period)) + 
+  geom_line () +
+  geom_point() + 
+  facet_wrap(vars(ID)) +
+  theme_bw() +
+  labs(y = "Plasma concentration of Metformin(ng/mL)", x = "Time(hr)")
 
 
 # Real-time 적용
@@ -355,7 +375,7 @@ metc_pktable <- metc_NCA %>%
   
   select(1:2, mean, sd, Median=median, Min=min, Max=max, geomean= geoMean) %>% 
   mutate(CV=round(sd/mean*100,2)) %>%
-  mutate(param = factor(param, levels = c("CMAX","TMAX","LAMZHL","AUCLST","AUCIFO","CLFO","VZFO"))) %>%
+  mutate(param = factor(param, levels = c("CMAX","AUCLST","AUCIFO","TMAX","LAMZHL", "CLFO","VZFO"))) %>%
   arrange(Period,param)
 
 #write.csv(metc_pktable, 'metc_NCA.csv', row.names = F, fileEncoding = 'cp949')
@@ -417,7 +437,6 @@ valsaa <- datava %>%
 
 
 #plot 생성
-
 head(valsaa)
 
 valsaa %>%
@@ -430,11 +449,21 @@ valsaa %>%
   geom_point(aes(x = Time, y = mean, col = Period)) + 
   geom_errorbar(aes(x = Time, ymax = mean + sd, ymin = mean, col = Period)) +
   theme_bw() +
-  labs(y = "Plasma concentration of Valsartan (Cohort a)(ng/mL)")
+  labs(y = "Plasma concentration of Valsartan (ng/mL)")
+
+
+# Appendix plot(개별 대상자)
+valsaa %>%
+  mutate(Conc = ifelse(Time == 0, 0, Conc)) %>%
+  ggplot(aes(x = Time, y = Conc, col = Period)) + 
+  geom_line () +
+  geom_point() + 
+  facet_wrap(vars(ID)) +
+  theme_bw() +
+  labs(y = "Plasma concentration of Valsartan(ng/mL)", x = "Time(hr)")
 
 
 #  Real-time 적용 
-
 view(valsaa)
 
 db_pk_tidy <- db_pk %>%
@@ -476,7 +505,7 @@ valsaa_pktable <- valsaa_NCA %>%
   
   select(1:2, mean, sd, Median=median, Min=min, Max=max, geomean= geoMean) %>% 
   mutate(CV=round(sd/mean*100,2)) %>%
-  mutate(param = factor(param, levels = c("CMAX","TMAX","LAMZHL","AUCLST","AUCIFO","CLFO","VZFO"))) %>%
+  mutate(param = factor(param, levels = c("CMAX","AUCLST","AUCIFO","TMAX","LAMZHL", "CLFO","VZFO"))) %>%
   arrange(Period,param)
 #write.csv(valsaa_pktable, 'valsaa_NCA.csv', row.names = F, fileEncoding = 'cp949')
 
@@ -541,7 +570,20 @@ valsac %>%
   geom_point(aes(x = Time, y = mean, col = Period)) + 
   geom_errorbar(aes(x = Time, ymax = mean + sd, ymin = mean, col = Period)) +
   theme_bw() +
-  labs(y = "Plasma concentration of Valsartan (Cohort C)(ng/mL)")
+  labs(y = "Plasma concentration of Valsartan (ng/mL)")
+
+
+# Appendix plot(개별 대상자)
+valsac %>%
+  mutate(Conc = ifelse(Time == 0, 0, Conc)) %>%
+  ggplot(aes(x = Time, y = Conc, col = Period)) + 
+  geom_line () +
+  geom_point() + 
+  facet_wrap(vars(ID)) +
+  theme_bw() +
+  labs(y = "Plasma concentration of Valsartan(ng/mL)", x = "Time(hr)")
+
+
 
 # Real-time 
 
@@ -586,7 +628,7 @@ valsac_pktable <- valsac_NCA %>%
   
   select(1:2, mean, sd, Median=median, Min=min, Max=max, geomean= geoMean) %>% 
   mutate(CV=round(sd/mean*100,2)) %>%
-  mutate(param = factor(param, levels = c("CMAX","TMAX","LAMZHL","AUCLST","AUCIFO","CLFO","VZFO"))) %>%
+  mutate(param = factor(param, levels = c("CMAX","AUCLST","AUCIFO","TMAX","LAMZHL", "CLFO","VZFO"))) %>%
   arrange(Period,param)
 #write.csv(valsac_pktable, 'valsac_NCA.csv', row.names = F, fileEncoding = 'cp949')
 
